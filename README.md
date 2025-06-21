@@ -1,12 +1,11 @@
 # Test Driven React Assessment
 
 A set of tasks to assesses the skills of a candidate for a React position, or to evaluate and improve one's own skills.
+Fundamental concept demonstrations for learning/assessment of React.
+Simple exercises that clearly isolate each concept.
 
 1. Clear documentation blocks with examples and expected outputs
 2. Graduated difficulty from basic concepts to advanced patterns
-3. Practical, real-world scenarios rather than abstract concepts
-4. Comprehensive test coverage with multiple test cases
-5. Organized by topic with logical progression
 
 ## Topics covered
 
