@@ -7,6 +7,41 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:browser": "vitest --browser.enabled=true",
+    "test:browser:ui": "vitest --browser.enabled=true --ui",
+    "test:fundamentals": "vitest run src/tests/react-fundamentals.test.js",
+    "test:state": "vitest run src/tests/react-state.test.js",
+    "test:effects": "vitest run src/tests/react-effects.test.js",
+    "test:context": "vitest run src/tests/react-context.test.js",
+    "test:hooks": "vitest run src/tests/react-hooks.test.js",
+    "test:performance": "vitest run src/tests/react-performance.test.js",
+    "test:patterns": "vitest run src/tests/react-patterns.test.js",
+    "test:forms": "vitest run src/tests/react-forms.test.js",
+    "test:errors": "vitest run src/tests/react-errors.test.js",
+    "test:testing": "vitest run src/tests/react-testing.test.js",
+    "test:architecture": "vitest run src/tests/react-architecture.test.js",
+    "test:concurrent": "vitest run src/tests/react-concurrent.test.js"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitest/browser": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "msw": "^2.10.2",
+    "playwright": "^1.53.1",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "prop-types": "^15.8.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   }
 }
