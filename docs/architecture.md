@@ -80,6 +80,26 @@ src/
 ├── react-architecture.js
 └── react-concurrent.js
 
+## Example Exercise Pattern
+
+Each exercise would follow this structure:
+
+```
+/**
+ * Create a custom hook that manages online/offline status
+ * Should return boolean indicating if user is online
+ * Should handle both initial state and status changes
+ *
+ * const OnlineStatus = () => {
+ *   const isOnline = useOnlineStatus();
+ *   return <div>{isOnline ? 'Online' : 'Offline'}</div>;
+ * };
+ */
+export function useOnlineStatus() {
+  // TODO: Implement custom hook
+}
+```
+
 ## Topics covered
 
 ### 1. Core React Concepts (react-fundamentals.js)
