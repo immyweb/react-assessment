@@ -41,44 +41,44 @@ Simple exercises that clearly isolate each concept.
 
 src/
 ├── exercises/
-│ ├── react-fundamentals.js
-│ ├── react-state.js
-│ ├── react-effects.js
-│ ├── react-context.js
-│ ├── react-hooks.js
-│ ├── react-performance.js
-│ ├── react-patterns.js
-│ ├── react-forms.js
-│ ├── react-errors.js
-│ ├── react-testing.js
-│ ├── react-architecture.js
-│ └── react-concurrent.js
+│ ├── react-fundamentals.jsx
+│ ├── react-state.jsx
+│ ├── react-effects.jsx
+│ ├── react-context.jsx
+│ ├── react-hooks.jsx
+│ ├── react-performance.jsx
+│ ├── react-patterns.jsx
+│ ├── react-forms.jsx
+│ ├── react-errors.jsx
+│ ├── react-testing.jsx
+│ ├── react-architecture.jsx
+│ └── react-concurrent.jsx
 ├── tests/
-│ ├── react-fundamentals.test.js
-│ ├── react-state.test.js
-│ ├── react-effects.test.js
-│ ├── react-context.test.js
-│ ├── react-hooks.test.js
-│ ├── react-performance.test.js
-│ ├── react-patterns.test.js
-│ ├── react-forms.test.js
-│ ├── react-errors.test.js
-│ ├── react-testing.test.js
-│ ├── react-architecture.test.js
-│ └── react-concurrent.test.js
+│ ├── react-fundamentals.test.jsx
+│ ├── react-state.test.jsx
+│ ├── react-effects.test.jsx
+│ ├── react-context.test.jsx
+│ ├── react-hooks.test.jsx
+│ ├── react-performance.test.jsx
+│ ├── react-patterns.test.jsx
+│ ├── react-forms.test.jsx
+│ ├── react-errors.test.jsx
+│ ├── react-testing.test.jsx
+│ ├── react-architecture.test.jsx
+│ └── react-concurrent.test.jsx
 └── answers/
-├── react-fundamentals.js
-├── react-state.js
-├── react-effects.js
-├── react-context.js
-├── react-hooks.js
-├── react-performance.js
-├── react-patterns.js
-├── react-forms.js
-├── react-errors.js
-├── react-testing.test.js
-├── react-architecture.js
-└── react-concurrent.js
+├── react-fundamentals.jsx
+├── react-state.jsx
+├── react-effects.jsx
+├── react-context.jsx
+├── react-hooks.jsx
+├── react-performance.jsx
+├── react-patterns.jsx
+├── react-forms.jsx
+├── react-errors.jsx
+├── react-testing.test.jsx
+├── react-architecture.jsx
+└── react-concurrent.jsx
 
 ## Example Exercise Pattern
 
@@ -102,7 +102,7 @@ export function useOnlineStatus() {
 
 ## Topics covered
 
-### 1. Core React Concepts (react-fundamentals.js)
+### 1. Core React Concepts (react-fundamentals.jsx)
 
 - Component creation and JSX
 - Props and prop validation
@@ -112,7 +112,7 @@ export function useOnlineStatus() {
 - Component composition patterns
 - Controlled vs uncontrolled components
 
-### 2. State Management (react-state.js)
+### 2. State Management (react-state.jsx)
 
 - useState hook fundamentals
 - State updates and batching
@@ -122,7 +122,7 @@ export function useOnlineStatus() {
 - useReducer for complex state
 - State normalization techniques
 
-### 3. Effects and Side Effects (react-effects.js)
+### 3. Effects and Side Effects (react-effects.jsx)
 
 - useEffect hook patterns
 - Effect dependencies and cleanup
@@ -132,7 +132,7 @@ export function useOnlineStatus() {
 - Race condition handling
 - Effect optimization
 
-### 4. Context and Global State (react-context.js)
+### 4. Context and Global State (react-context.jsx)
 
 - createContext and useContext
 - Context provider patterns
@@ -142,7 +142,7 @@ export function useOnlineStatus() {
 - Custom context hooks
 - Context vs state management libraries
 
-### 5. Advanced Hooks (react-hooks.js)
+### 5. Advanced Hooks (react-hooks.jsx)
 
 - useMemo and useCallback optimization
 - useRef for DOM access and values
@@ -152,7 +152,7 @@ export function useOnlineStatus() {
 - useLayoutEffect use cases
 - useSyncExternalStore integration
 
-### 6. Performance Optimization (react-performance.js)
+### 6. Performance Optimization (react-performance.jsx)
 
 - React.memo and memoization
 - Component splitting strategies
@@ -162,7 +162,7 @@ export function useOnlineStatus() {
 - Render optimization patterns
 - Performance measurement tools
 
-### 7. Advanced Patterns (react-patterns.js)
+### 7. Advanced Patterns (react-patterns.jsx)
 
 - Higher-Order Components (HOCs)
 - Render props pattern
@@ -172,7 +172,7 @@ export function useOnlineStatus() {
 - Provider pattern variations
 - Inversion of control patterns
 
-### 8. Forms and Validation (react-forms.js)
+### 8. Forms and Validation (react-forms.jsx)
 
 - Controlled form patterns
 - Form validation strategies
@@ -182,7 +182,7 @@ export function useOnlineStatus() {
 - Custom form hooks
 - Accessibility in forms
 
-### 9. Error Handling (react-errors.js)
+### 9. Error Handling (react-errors.jsx)
 
 - Error boundaries
 - Error recovery strategies
@@ -192,7 +192,7 @@ export function useOnlineStatus() {
 - Development vs production errors
 - Error boundary composition
 
-### 10. Testing Patterns (react-testing.js)
+### 10. Testing Patterns (react-testing.jsx)
 
 - Component testing strategies
 - Hook testing patterns
@@ -202,7 +202,7 @@ export function useOnlineStatus() {
 - Performance testing
 - Test utilities creation
 
-### 11. Architecture and Design (react-architecture.js)
+### 11. Architecture and Design (react-architecture.jsx)
 
 - Component organization
 - Code splitting strategies
@@ -212,7 +212,7 @@ export function useOnlineStatus() {
 - Authentication patterns
 - Feature-based organization
 
-### 12. Concurrent Features (react-concurrent.js)
+### 12. Concurrent Features (react-concurrent.jsx)
 
 - Suspense for data fetching
 - Concurrent rendering concepts

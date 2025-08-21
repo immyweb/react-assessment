@@ -12,19 +12,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:browser": "vitest --browser.enabled=true",
-    "test:browser:ui": "vitest --browser.enabled=true --ui",
-    "test:fundamentals": "vitest run src/tests/react-fundamentals.test.js",
-    "test:state": "vitest run src/tests/react-state.test.js",
-    "test:effects": "vitest run src/tests/react-effects.test.js",
-    "test:context": "vitest run src/tests/react-context.test.js",
-    "test:hooks": "vitest run src/tests/react-hooks.test.js",
-    "test:performance": "vitest run src/tests/react-performance.test.js",
-    "test:patterns": "vitest run src/tests/react-patterns.test.js",
-    "test:forms": "vitest run src/tests/react-forms.test.js",
-    "test:errors": "vitest run src/tests/react-errors.test.js",
-    "test:testing": "vitest run src/tests/react-testing.test.js",
-    "test:architecture": "vitest run src/tests/react-architecture.test.js",
-    "test:concurrent": "vitest run src/tests/react-concurrent.test.js"
+    "test:browser:ui": "vitest --browser.enabled=true --ui"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
