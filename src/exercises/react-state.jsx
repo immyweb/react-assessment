@@ -58,6 +58,8 @@ export function UserProfile() {
  * Should have a counter that can be incremented multiple times rapidly
  * Should demonstrate difference between direct updates and functional updates
  * Should have buttons for both approaches
+ * The direct update can miss increments because React batches state updates.
+ * The functional update always works as expected, even with rapid clicks.
  *
  * Expected behavior:
  * - Direct update button may not work correctly when clicked rapidly
