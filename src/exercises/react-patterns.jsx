@@ -330,10 +330,6 @@ export function HeadlessToggle({ initialValue = false, children }) {
 // EXERCISE 6: Provider Pattern Variations
 // =============================================================================
 
-// =============================================================================
-// EXERCISE 6: Provider Pattern Variations
-// =============================================================================
-
 /**
  * Create a ThemeProvider using React Context.
  * Should manage theme state and provide theme switching functionality
