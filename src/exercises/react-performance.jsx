@@ -14,14 +14,12 @@
 
 import React, {
   useState,
-  useEffect,
   useMemo,
   useCallback,
   useRef,
   memo,
   lazy,
-  Suspense,
-  startTransition
+  Suspense
 } from 'react';
 
 // =============================================================================
