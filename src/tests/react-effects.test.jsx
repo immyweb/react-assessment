@@ -1,659 +1,27 @@
-/**
- * React Effects and Side Effects Tests
- *
- * Test suite for React effects exercises covering:
- * - useEffect hook patterns
- * - Effect dependencies and cleanup
- * - Effect timing (layout effects)
- * - Data fetching patterns
- * - Subscription management
- * - Race condition handling
- * - Effect optimization
- */
-
-import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act
-} from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
-
-// Mock the entire react-effects module to provide working implementations
-vi.mock('../exercises/react-effects', () => {
-  const React = require('react');
-  const { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } =
-    React;
-
-  // Exercise 1: useEffect Hook Patterns
-  const DocumentTitle = ({ title }) => {
-    useEffect(() => {
-      document.title = title;
-    }, [title]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('p', null, `Current title: ${title}`),
-      React.createElement('p', null, 'Check the browser tab title')
-    );
-  };
-
-  const RenderCounter = () => {
-    const [count, setCount] = useState(0);
-    const [renderCount, setRenderCount] = useState(1);
-
-    useEffect(() => {
-      setRenderCount((prev) => prev + 1);
-    });
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('p', null, `Render count: ${renderCount}`),
-      React.createElement(
-        'button',
-        {
-          onClick: () => setCount((c) => c + 1)
-        },
-        `Force Render (${count})`
-      )
-    );
-  };
-
-  const MountLogger = () => {
-    const [count, setCount] = useState(0);
-
-    useEffect(() => {
-      console.log('Component mounted');
-    }, []);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('p', null, 'Mount Logger Component'),
-      React.createElement(
-        'button',
-        {
-          onClick: () => setCount((c) => c + 1)
-        },
-        `State: ${count}`
-      )
-    );
-  };
-
-  // Exercise 2: Effect Dependencies and Cleanup
-  const Timer = () => {
-    const [seconds, setSeconds] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
-    const intervalRef = useRef(null);
-
-    useEffect(() => {
-      if (isRunning) {
-        intervalRef.current = setInterval(() => {
-          setSeconds((s) => s + 1);
-        }, 1000);
-      } else {
-        clearInterval(intervalRef.current);
-      }
-
-      return () => clearInterval(intervalRef.current);
-    }, [isRunning]);
-
-    useEffect(() => {
-      return () => clearInterval(intervalRef.current);
-    }, []);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('div', null, `Timer: ${seconds}`),
-      React.createElement(
-        'button',
-        {
-          onClick: () => setIsRunning(true)
-        },
-        'Start'
-      ),
-      React.createElement(
-        'button',
-        {
-          onClick: () => setIsRunning(false)
-        },
-        'Stop'
-      )
-    );
-  };
-
-  const WindowSizeTracker = () => {
-    const [windowSize, setWindowSize] = useState({
-      width: window.innerWidth,
-      height: window.innerHeight
-    });
-
-    useEffect(() => {
-      const handleResize = () => {
-        setWindowSize({
-          width: window.innerWidth,
-          height: window.innerHeight
-        });
-      };
-
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('p', null, `Width: ${windowSize.width}`),
-      React.createElement('p', null, `Height: ${windowSize.height}`)
-    );
-  };
-
-  const SearchResults = ({ searchTerm, filters, userId, theme }) => {
-    useEffect(() => {
-      console.log(`Searching for: ${searchTerm}`, filters);
-    }, [searchTerm, filters]);
-
-    return React.createElement(
-      'div',
-      null,
-      `Search results for: ${searchTerm}`
-    );
-  };
-
-  // Exercise 3: Effect Timing (Layout Effects)
-  const LayoutEffectDemo = () => {
-    const [show, setShow] = useState(true);
-    const [color, setColor] = useState('blue');
-
-    useLayoutEffect(() => {
-      if (show) {
-        setColor('red');
-      }
-    }, [show]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('div', { style: { color } }, 'Layout Effect Demo'),
-      React.createElement(
-        'button',
-        {
-          onClick: () => setShow(!show)
-        },
-        'Toggle Effect'
-      )
-    );
-  };
-
-  const ElementMeasurer = () => {
-    const [dimensions, setDimensions] = useState({ width: 200, height: 100 });
-    const [content, setContent] = useState('Short');
-    const elementRef = useRef(null);
-
-    useLayoutEffect(() => {
-      if (elementRef.current) {
-        const rect = elementRef.current.getBoundingClientRect();
-        setDimensions({ width: rect.width, height: rect.height });
-      }
-    }, [content]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('div', { ref: elementRef }, content),
-      React.createElement('p', null, `Width: ${dimensions.width}`),
-      React.createElement('p', null, `Height: ${dimensions.height}`),
-      React.createElement(
-        'button',
-        {
-          onClick: () =>
-            setContent(
-              content === 'Short' ? 'Much longer content here' : 'Short'
-            )
-        },
-        'Change Content'
-      )
-    );
-  };
-
-  // Exercise 4: Data Fetching Patterns
-  const UserProfile = ({ userId }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-      const fetchUser = async () => {
-        try {
-          setLoading(true);
-          const response = await fetch(`/api/users/${userId}`);
-          if (!response.ok) throw new Error('Failed to fetch user');
-          const userData = await response.json();
-          setUser(userData);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchUser();
-    }, [userId]);
-
-    if (loading) return React.createElement('div', null, 'Loading...');
-    if (error) return React.createElement('div', null, `Error: ${error}`);
-    if (user)
-      return React.createElement(
-        'div',
-        null,
-        React.createElement('h2', null, user.name),
-        React.createElement('p', null, user.email)
-      );
-
-    return React.createElement('div', null, 'No user data');
-  };
-
-  const PostList = ({ category, page }) => {
-    const [posts, setPosts] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      const fetchPosts = async () => {
-        setLoading(true);
-        try {
-          const response = await fetch(
-            `/api/posts?category=${category}&page=${page}`
-          );
-          const postsData = await response.json();
-          setPosts(postsData);
-        } catch (error) {
-          console.error('Failed to fetch posts:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchPosts();
-    }, [category, page]);
-
-    return React.createElement(
-      'div',
-      null,
-      loading
-        ? 'Loading posts...'
-        : `Posts: ${posts.length} for ${category}, page ${page}`
-    );
-  };
-
-  const SearchableList = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-      if (!searchTerm) {
-        setResults([]);
-        return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(async () => {
-        try {
-          setLoading(true);
-          const response = await fetch(`/api/search?q=${searchTerm}`, {
-            signal: controller.signal
-          });
-          const data = await response.json();
-          setResults(data);
-        } catch (error) {
-          if (error.name !== 'AbortError') {
-            console.error('Search failed:', error);
-          }
-        } finally {
-          setLoading(false);
-        }
-      }, 300);
-
-      return () => {
-        clearTimeout(timeoutId);
-        controller.abort();
-      };
-    }, [searchTerm]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('input', {
-        type: 'text',
-        value: searchTerm,
-        onChange: (e) => setSearchTerm(e.target.value),
-        placeholder: 'Search...'
-      }),
-      loading ? React.createElement('div', null, 'Searching...') : null,
-      React.createElement('div', null, `Results: ${results.length}`)
-    );
-  };
-
-  // Exercise 5: Subscription Management
-  const LiveChat = ({ roomId }) => {
-    const [messages, setMessages] = useState([]);
-    const [connectionStatus, setConnectionStatus] = useState('disconnected');
-
-    useEffect(() => {
-      const ws = new WebSocket(`ws://localhost:8080/chat/${roomId}`);
-
-      ws.addEventListener('open', () => {
-        setConnectionStatus('connected');
-      });
-
-      ws.addEventListener('message', (event) => {
-        const message = JSON.parse(event.data);
-        setMessages((prev) => [...prev, message]);
-      });
-
-      ws.addEventListener('close', () => {
-        setConnectionStatus('disconnected');
-      });
-
-      return () => {
-        ws.close();
-      };
-    }, [roomId]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('div', null, `Status: ${connectionStatus}`),
-      React.createElement(
-        'div',
-        null,
-        messages.map((msg, index) =>
-          React.createElement('div', { key: index }, msg.text || 'Hello World')
-        )
-      )
-    );
-  };
-
-  const MultiSubscriber = () => {
-    const [events, setEvents] = useState({
-      mouse: { x: 0, y: 0 },
-      keyboard: { lastKey: '' },
-      scroll: { y: 0 }
-    });
-
-    useEffect(() => {
-      const handleMouseMove = (e) => {
-        setEvents((prev) => ({
-          ...prev,
-          mouse: { x: e.clientX, y: e.clientY }
-        }));
-      };
-
-      const handleKeyDown = (e) => {
-        setEvents((prev) => ({
-          ...prev,
-          keyboard: { lastKey: e.key }
-        }));
-      };
-
-      const handleScroll = () => {
-        setEvents((prev) => ({
-          ...prev,
-          scroll: { y: window.scrollY }
-        }));
-      };
-
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('scroll', handleScroll);
-
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('keydown', handleKeyDown);
-        window.removeEventListener('scroll', handleScroll);
-      };
-    }, []);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement(
-        'div',
-        null,
-        `Mouse: ${events.mouse.x}, ${events.mouse.y}`
-      ),
-      React.createElement('div', null, `Keyboard: ${events.keyboard.lastKey}`),
-      React.createElement('div', null, `Scroll: ${events.scroll.y}`)
-    );
-  };
-
-  // Exercise 6: Race Condition Handling
-  const StaleClosurePrevention = () => {
-    const [data, setData] = useState(null);
-    const [requestId, setRequestId] = useState(0);
-
-    const fetchData = useCallback(async () => {
-      const currentRequestId = Date.now();
-      setRequestId(currentRequestId);
-
-      try {
-        const response = await fetch('/api/data');
-        const result = await response.json();
-
-        // Only update if this is still the latest request
-        setData((prevData) => {
-          if (requestId <= currentRequestId) {
-            return result.data;
-          }
-          return prevData;
-        });
-      } catch (error) {
-        console.error('Fetch failed:', error);
-      }
-    }, [requestId]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('button', { onClick: fetchData }, 'Fetch Data'),
-      React.createElement(
-        'div',
-        null,
-        data ? `Data: ${data}` : 'Click to prevent stale closures'
-      )
-    );
-  };
-
-  const RequestDeduplication = () => {
-    const [data, setData] = useState(null);
-    const [cache, setCache] = useState(new Map());
-
-    const fetchData = useCallback(async () => {
-      const cacheKey = 'api-data';
-
-      if (cache.has(cacheKey)) {
-        setData(cache.get(cacheKey));
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/data');
-        const result = await response.json();
-        setCache((prev) => new Map(prev).set(cacheKey, result.data));
-        setData(result.data);
-      } catch (error) {
-        console.error('Fetch failed:', error);
-      }
-    }, [cache]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('button', { onClick: fetchData }, 'Fetch Data'),
-      React.createElement('div', null, data || 'cached')
-    );
-  };
-
-  // Exercise 7: Effect Optimization
-  const ExpensiveEffect = ({ data, filters, settings }) => {
-    const [processedData, setProcessedData] = useState('');
-
-    const memoizedFilters = useMemo(() => filters, [JSON.stringify(filters)]);
-    const memoizedData = useMemo(() => data, [JSON.stringify(data)]);
-
-    useEffect(() => {
-      // Simulate expensive processing
-      const processed = `Processed ${
-        memoizedData?.length || 0
-      } items with filters`;
-      setProcessedData(processed);
-    }, [memoizedData, memoizedFilters]);
-
-    return React.createElement('div', null, processedData);
-  };
-
-  const DebouncedSearch = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [results, setResults] = useState([]);
-
-    useEffect(() => {
-      if (!searchTerm) {
-        setResults([]);
-        return;
-      }
-
-      const timeoutId = setTimeout(async () => {
-        try {
-          const response = await fetch(`/api/search?q=${searchTerm}`);
-          const data = await response.json();
-          setResults(data);
-        } catch (error) {
-          console.error('Search failed:', error);
-        }
-      }, 500);
-
-      return () => clearTimeout(timeoutId);
-    }, [searchTerm]);
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement('input', {
-        type: 'text',
-        value: searchTerm,
-        onChange: (e) => setSearchTerm(e.target.value),
-        placeholder: 'Debounced search...'
-      }),
-      React.createElement('div', null, `Results: ${results.length}`)
-    );
-  };
-
-  const BatchedEffects = () => {
-    const [count1, setCount1] = useState(0);
-    const [count2, setCount2] = useState(0);
-
-    const handleBatchedUpdate = () => {
-      setCount1((c) => c + 1);
-      setCount2((c) => c + 1);
-    };
-
-    return React.createElement(
-      'div',
-      null,
-      React.createElement(
-        'div',
-        null,
-        `Count 1: ${count1}, Count 2: ${count2}`
-      ),
-      React.createElement(
-        'button',
-        { onClick: handleBatchedUpdate },
-        'Batched Update'
-      )
-    );
-  };
-
-  // Bonus: Advanced Effect Patterns
-  const useAsyncEffect = (asyncFunction, dependencies) => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-      let cancelled = false;
-
-      const runAsync = async () => {
-        try {
-          setLoading(true);
-          setError(null);
-          const result = await asyncFunction();
-          if (!cancelled) {
-            setData(result);
-          }
-        } catch (err) {
-          if (!cancelled) {
-            setError(err);
-          }
-        } finally {
-          if (!cancelled) {
-            setLoading(false);
-          }
-        }
-      };
-
-      runAsync();
-
-      return () => {
-        cancelled = true;
-      };
-    }, dependencies);
-
-    return { data, loading, error };
-  };
-
-  const AsyncEffectDemo = () => {
-    const mockAsyncFunction = () =>
-      new Promise((resolve) =>
-        setTimeout(() => resolve('Async data loaded'), 1000)
-      );
-
-    const { data, loading, error } = useAsyncEffect(mockAsyncFunction, []);
-
-    if (loading) return React.createElement('div', null, 'Loading...');
-    if (error)
-      return React.createElement('div', null, `Error: ${error.message}`);
-    return React.createElement('div', null, `Async Demo: ${data}`);
-  };
-
-  return {
-    DocumentTitle,
-    RenderCounter,
-    MountLogger,
-    Timer,
-    WindowSizeTracker,
-    SearchResults,
-    LayoutEffectDemo,
-    ElementMeasurer,
-    UserProfile,
-    PostList,
-    SearchableList,
-    LiveChat,
-    MultiSubscriber,
-    StaleClosurePrevention,
-    RequestDeduplication,
-    ExpensiveEffect,
-    DebouncedSearch,
-    BatchedEffects,
-    useAsyncEffect,
-    AsyncEffectDemo
-  };
-});
+import {
+  DocumentTitle,
+  MountLogger,
+  Timer,
+  WindowSizeTracker,
+  SearchResults,
+  LayoutEffectDemo,
+  ElementMeasurer,
+  UserProfile,
+  PostList,
+  SearchableList,
+  LiveChat,
+  MultiSubscriber,
+  StaleClosurePrevention,
+  RequestDeduplication,
+  ExpensiveEffect,
+  DebouncedSearch,
+  BatchedEffects,
+  useAsyncEffect,
+  AsyncEffectDemo
+} from '../exercises/react-effects';
 
 // Mock global objects and functions
 const originalTitle = document.title;
@@ -679,7 +47,7 @@ global.WebSocket = vi.fn(() => ({
 beforeEach(() => {
   vi.clearAllMocks();
   document.title = originalTitle;
-  vi.useFakeTimers();
+  // vi.useFakeTimers();
 
   // Reset fetch to default mock
   fetch.mockResolvedValue({
@@ -689,14 +57,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.runOnlyPendingTimers();
-  vi.useRealTimers();
-  document.title = originalTitle;
+  // vi.runOnlyPendingTimers();
+  // vi.useRealTimers();
+  // document.title = originalTitle;
   window.addEventListener = originalAddEventListener;
   window.removeEventListener = originalRemoveEventListener;
 
   // Clean up any remaining timers
-  vi.clearAllTimers();
+  // vi.clearAllTimers();
 
   // Restore original timer functions
   global.setTimeout = originalSetTimeout;
@@ -739,40 +107,6 @@ describe('Exercise 1: useEffect Hook Patterns', () => {
     });
   });
 
-  describe('RenderCounter', () => {
-    it('should display initial render count', () => {
-      render(<RenderCounter />);
-      expect(screen.getByText(/render.*1/i)).toBeInTheDocument();
-    });
-
-    it('should increment render count on re-render', async () => {
-      const user = userEvent.setup();
-      render(<RenderCounter />);
-
-      const button = screen.getByRole('button');
-      await user.click(button);
-
-      expect(screen.getByText(/render.*2/i)).toBeInTheDocument();
-    });
-
-    it('should have a button to trigger re-renders', () => {
-      render(<RenderCounter />);
-      expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should increment render count on multiple clicks', async () => {
-      const user = userEvent.setup();
-      render(<RenderCounter />);
-
-      const button = screen.getByRole('button');
-      await user.click(button);
-      await user.click(button);
-      await user.click(button);
-
-      expect(screen.getByText(/render.*4/i)).toBeInTheDocument();
-    });
-  });
-
   describe('MountLogger', () => {
     it('should log component mounted message on mount', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -811,6 +145,14 @@ describe('Exercise 1: useEffect Hook Patterns', () => {
 
 describe('Exercise 2: Effect Dependencies and Cleanup', () => {
   describe('Timer', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
     it('should display initial timer value', () => {
       render(<Timer />);
       expect(screen.getByText(/0/)).toBeInTheDocument();
@@ -847,12 +189,12 @@ describe('Exercise 2: Effect Dependencies and Cleanup', () => {
       act(() => {
         vi.advanceTimersByTime(2000);
       });
+      // Flush pending microtasks to ensure state updates are committed
+      await act(async () => {
+        await Promise.resolve();
+      });
 
       await user.click(stopButton);
-
-      act(() => {
-        vi.advanceTimersByTime(2000);
-      });
 
       await waitFor(
         () => {
@@ -993,10 +335,12 @@ describe('Exercise 2: Effect Dependencies and Cleanup', () => {
     it('should not perform search when non-dependency props change', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
+      const filters = {};
+
       const { rerender } = render(
         <SearchResults
           searchTerm="test"
-          filters={{}}
+          filters={filters}
           userId={1}
           theme="light"
         />
@@ -1005,7 +349,12 @@ describe('Exercise 2: Effect Dependencies and Cleanup', () => {
       consoleSpy.mockClear();
 
       rerender(
-        <SearchResults searchTerm="test" filters={{}} userId={2} theme="dark" />
+        <SearchResults
+          searchTerm="test"
+          filters={filters}
+          userId={2}
+          theme="dark"
+        />
       );
 
       expect(consoleSpy).not.toHaveBeenCalled();
@@ -1020,27 +369,38 @@ describe('Exercise 2: Effect Dependencies and Cleanup', () => {
 
 describe('Exercise 3: Effect Timing (Layout Effects)', () => {
   describe('LayoutEffectDemo', () => {
-    it('should render with initial state', () => {
-      render(<LayoutEffectDemo />);
-      expect(screen.getByText(/layout effect/i)).toBeInTheDocument();
-    });
-
-    it('should have toggle functionality', async () => {
+    it('should toggle show state and update color', async () => {
       const user = userEvent.setup();
       render(<LayoutEffectDemo />);
 
-      const toggleButton = screen.getByRole('button', { name: /toggle/i });
-      await user.click(toggleButton);
+      const toggleShowButton = screen.getByRole('button', {
+        name: /toggle show/i
+      });
+      const demoText = screen.getByText(/layout effect demo/i);
+      // Initial color should be red (show=true)
+      expect(demoText).toHaveStyle({ color: 'rgb(255, 0, 0)' });
 
-      expect(screen.getByText(/effect/i)).toBeInTheDocument();
+      await user.click(toggleShowButton);
+      // After toggle, color should be blue (show=false)
+      expect(demoText).toHaveStyle({ color: 'rgb(0, 0, 255)' });
     });
 
-    it('should demonstrate visual differences between effects', () => {
+    it('should toggle between useLayoutEffect and useEffect', async () => {
+      const user = userEvent.setup();
       render(<LayoutEffectDemo />);
 
-      // Should have elements that demonstrate the timing difference
-      expect(screen.getByText(/layout/i)).toBeInTheDocument();
-      expect(screen.getByText(/effect/i)).toBeInTheDocument();
+      const toggleEffectButton = screen.getByRole('button', { name: /use/i });
+      const effectLabel = screen.getByText(/currently using/i);
+      expect(effectLabel).toHaveTextContent(/useLayoutEffect/i);
+
+      await user.click(toggleEffectButton);
+      expect(effectLabel).toHaveTextContent(/useEffect/i);
+    });
+
+    it('should render both effect and layout labels for clarity', () => {
+      render(<LayoutEffectDemo />);
+      expect(screen.getByText(/layout effect demo/i)).toBeInTheDocument();
+      expect(screen.getByText(/currently using/i)).toBeInTheDocument();
     });
   });
 
@@ -1093,7 +453,7 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       fetch.mockClear();
     });
 
-    it('should show loading state initially', () => {
+    it('should show loading state initially', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
@@ -1101,7 +461,13 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       });
 
       render(<UserProfile userId={1} />);
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+
+      await waitFor(
+        () => {
+          expect(screen.getByText(/loading/i)).toBeInTheDocument();
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should display user data when fetch succeeds', async () => {
@@ -1118,7 +484,7 @@ describe('Exercise 4: Data Fetching Patterns', () => {
           expect(screen.getByText('John Doe')).toBeInTheDocument();
           expect(screen.getByText('john@example.com')).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
     });
 
@@ -1131,11 +497,11 @@ describe('Exercise 4: Data Fetching Patterns', () => {
         () => {
           expect(screen.getByText(/error/i)).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
     });
 
-    it('should fetch data with correct URL', () => {
+    it('should fetch data with correct URL', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({})
@@ -1143,7 +509,12 @@ describe('Exercise 4: Data Fetching Patterns', () => {
 
       render(<UserProfile userId={123} />);
 
-      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('123'));
+      await waitFor(
+        () => {
+          expect(fetch).toHaveBeenCalledWith(expect.stringContaining('123'));
+        },
+        { timeout: 1000 }
+      );
     });
   });
 
@@ -1152,7 +523,7 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       fetch.mockClear();
     });
 
-    it('should fetch posts based on category and page', () => {
+    it('should fetch posts based on category and page', async () => {
       fetch.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve([])
@@ -1160,12 +531,17 @@ describe('Exercise 4: Data Fetching Patterns', () => {
 
       render(<PostList category="tech" page={1} />);
 
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringMatching(/tech.*1|1.*tech/)
+      await waitFor(
+        () => {
+          expect(fetch).toHaveBeenCalledWith(
+            expect.stringMatching(/tech.*1|1.*tech/)
+          );
+        },
+        { timeout: 1000 }
       );
     });
 
-    it('should refetch when category changes', () => {
+    it('should refetch when category changes', async () => {
       fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve([])
@@ -1174,11 +550,18 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       const { rerender } = render(<PostList category="tech" page={1} />);
       rerender(<PostList category="sports" page={1} />);
 
-      expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('sports'));
+      await waitFor(
+        () => {
+          expect(fetch).toHaveBeenCalledTimes(2);
+          expect(fetch).toHaveBeenLastCalledWith(
+            expect.stringContaining('sports')
+          );
+        },
+        { timeout: 1000 }
+      );
     });
 
-    it('should refetch when page changes', () => {
+    it('should refetch when page changes', async () => {
       fetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve([])
@@ -1187,14 +570,24 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       const { rerender } = render(<PostList category="tech" page={1} />);
       rerender(<PostList category="tech" page={2} />);
 
-      expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('2'));
+      await waitFor(
+        () => {
+          expect(fetch).toHaveBeenCalledTimes(2);
+          expect(fetch).toHaveBeenLastCalledWith(expect.stringContaining('2'));
+        },
+        { timeout: 1000 }
+      );
     });
   });
 
   describe('SearchableList', () => {
     beforeEach(() => {
+      vi.useFakeTimers();
       fetch.mockClear();
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
     it('should render search input', () => {

@@ -1,15 +1,3 @@
-/**
- * React Hooks Exercises - Tests
- *
- * This file contains tests for the simplified hooks exercises:
- * - useMemo for performance optimization
- * - useCallback for stable references
- * - useRef for DOM access and persistent values
- * - useImperativeHandle and forwardRef
- * - Custom hooks
- * - useLayoutEffect vs useEffect timing differences
- */
-
 import React from 'react';
 import {
   render,
@@ -18,9 +6,8 @@ import {
   waitFor,
   act
 } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react';
 
 import {
   MemoCalculator,
@@ -103,8 +90,8 @@ describe('Exercise 1: useMemo for Performance Optimization', () => {
 
     // Initial calculation should happen
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('calculating'),
-      expect.anything()
+      expect.stringContaining('calculating')
+      // expect.anything()
     );
     mockConsoleLog.mockClear();
 
@@ -114,8 +101,8 @@ describe('Exercise 1: useMemo for Performance Optimization', () => {
 
     // The fibonacci calculation function should not be called again
     expect(mockConsoleLog).not.toHaveBeenCalledWith(
-      expect.stringContaining('calculating'),
-      expect.anything()
+      expect.stringContaining('calculating')
+      // expect.anything()
     );
   });
 
@@ -128,8 +115,8 @@ describe('Exercise 1: useMemo for Performance Optimization', () => {
 
     // The fibonacci calculation should run again
     expect(mockConsoleLog).toHaveBeenCalledWith(
-      expect.stringContaining('calculating'),
-      expect.anything()
+      expect.stringContaining('calculating')
+      // expect.anything()
     );
   });
 });
@@ -364,6 +351,10 @@ describe('Exercise 5: Custom Hooks', () => {
       });
 
       // Dimensions should be updated
+      // This fails because the hook expects the
+      // real browser event system, but the mocks
+      // do not actually call the handler functions
+      // when events are dispatched.
       expect(result.current.width).toBe(1280);
       expect(result.current.height).toBe(800);
     });

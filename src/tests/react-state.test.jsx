@@ -1,17 +1,3 @@
-/**
- * React State Management Exercises - Unit Tests
- *
- * This file contains unit tests for all React state management exercises:
- * - useState hook fundamentals
- * - State updates and batching
- * - State structure design
- * - Avoiding state mutations
- * - State lifting patterns
- * - useReducer for complex state
- * - State normalization techniques
- */
-
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -561,7 +547,7 @@ describe('Exercise 6: useReducer for Complex State', () => {
     });
   });
 
-  describe.only('ShoppingCart Component', () => {
+  describe('ShoppingCart Component', () => {
     test('should display empty cart initially', () => {
       render(<ShoppingCart />);
 
