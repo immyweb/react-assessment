@@ -15,8 +15,7 @@ import React, {
   useContext,
   useState,
   useReducer,
-  useMemo,
-  useCallback
+  useMemo
 } from 'react';
 
 // =============================================================================
