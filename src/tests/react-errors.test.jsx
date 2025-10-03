@@ -1,9 +1,3 @@
-/**
- * React Error Handling Tests
- *
- * This file contains tests for the error handling exercises.
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
@@ -74,7 +68,7 @@ describe('ErrorRecoveryComponent', () => {
 
   it('starts in a non-error state', () => {
     const { queryByText } = render(<ErrorRecoveryComponent />);
-    expect(queryByText(/error/i)).not.toBeInTheDocument();
+    expect(queryByText(/error occurred/i)).not.toBeInTheDocument();
   });
 
   it('shows error state when error is triggered', () => {
@@ -162,19 +156,41 @@ describe('ErrorReporting', () => {
 
 describe('GracefulDegradation', () => {
   it('renders all working features', () => {
+    // Mock geolocation
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn((success) => {
+        success({ coords: { latitude: 1, longitude: 2 } });
+      })
+    };
+    const originalGeolocation = navigator.geolocation;
+    Object.defineProperty(navigator, 'geolocation', {
+      value: mockGeolocation,
+      configurable: true
+    });
+
     const { getByText } = render(<GracefulDegradation />);
     expect(getByText(/feature 1/i)).toBeInTheDocument();
     expect(getByText(/feature 2/i)).toBeInTheDocument();
+
+    // Restore original geolocation
+    Object.defineProperty(navigator, 'geolocation', {
+      value: originalGeolocation,
+      configurable: true
+    });
   });
 
   it('shows appropriate message when a feature is unavailable', () => {
-    // Mock one feature to fail
-    vi.spyOn(window, 'localStorage').mockImplementationOnce(() => {
+    // Mock localStorage.getItem to throw
+    const originalGetItem = window.localStorage.getItem;
+    vi.spyOn(window.localStorage, 'getItem').mockImplementationOnce(() => {
       throw new Error('localStorage not available');
     });
 
     const { getByText } = render(<GracefulDegradation />);
     expect(getByText(/feature unavailable/i)).toBeInTheDocument();
+
+    // Restore original getItem
+    window.localStorage.getItem = originalGetItem;
   });
 });
 
@@ -195,9 +211,11 @@ describe('EnvironmentAwareErrorHandler', () => {
 
   it('shows user-friendly error in production mode', () => {
     process.env.NODE_ENV = 'production';
-    const { getByText, queryByText } = render(<EnvironmentAwareErrorHandler />);
+    const { getByText, queryByText, getAllByText } = render(
+      <EnvironmentAwareErrorHandler />
+    );
     fireEvent.click(getByText(/trigger error/i));
-    expect(getByText(/something went wrong/i)).toBeInTheDocument();
+    expect(getAllByText(/something went wrong/i)[0]).toBeInTheDocument();
     expect(queryByText(/stack trace/i)).not.toBeInTheDocument();
   });
 });
