@@ -236,6 +236,18 @@ export function DataFetcher({ url, render }) {
  * Should manage active tab state
  * Should coordinate between tab buttons and panels
  * Should use React.Children utilities
+ * <Tabs>
+    <TabList>
+      <Tab index={0}>Tab 1</Tab>
+      <Tab index={1}>Tab 2</Tab>
+      <Tab index={2}>Tab 3</Tab>
+    </TabList>
+    <TabPanels>
+      <TabPanel index={0}>Panel 1 Content</TabPanel>
+      <TabPanel index={1}>Panel 2 Content</TabPanel>
+      <TabPanel index={2}>Panel 3 Content</TabPanel>
+    </TabPanels>
+  </Tabs>
  */
 export function Tabs({ children }) {
   // TODO: Implement compound component pattern
