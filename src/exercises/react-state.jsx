@@ -148,10 +148,10 @@ const TemperatureInput = ({ scale, temperature, onTemperatureChange }) => {
 
   return (
     <fieldset>
-      <legend>
+      <label htmlFor={`temp-${scale}`}>
         Enter temperature in {scale === 'c' ? 'Celsius' : 'Fahrenheit'}:
-      </legend>
-      <input value={temperature} onChange={handleChange} />
+      </label>
+      <input id={`temp-${scale}`} value={temperature} onChange={handleChange} />
     </fieldset>
   );
 };

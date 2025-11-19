@@ -271,35 +271,47 @@ export function TodoList() {
   }
 
   function removeTodo(id) {
-    const newTodos = todos.filter((todo) => todo.id !== id);
-    setTodos(newTodos);
+    setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
+  }
+
+  function toogleCompleted(id) {
+    setTodos((prevTodos) =>
+      prevTodos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
   }
 
   return (
     <>
-      <ul>
-        {todos.length > 0
-          ? todos.map((todo) => {
+      <section>
+        {todos.length > 0 ? (
+          <ul>
+            {todos.map((todo) => {
               return (
                 <li key={todo.id}>
-                  {todo.text} <input type="checkbox" checked={todo.completed} />
+                  {todo.text}
+                  <input
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => toogleCompleted(todo.id)}
+                  />
                   <button onClick={() => removeTodo(todo.id)}>Remove</button>
                 </li>
               );
-            })
-          : 'No todos'}
-      </ul>
-      <div>
+            })}
+          </ul>
+        ) : (
+          'No todos'
+        )}
+      </section>
+      <section>
         <label>
-          Add todo:{' '}
-          <input
-            name="addTodoInput"
-            value={item}
-            onChange={(e) => setItem(e.target.value)}
-          />
+          Add todo{' '}
+          <input value={item} onChange={(e) => setItem(e.target.value)} />
         </label>
         <button onClick={() => addTodo()}>Add</button>
-      </div>
+      </section>
     </>
   );
 }
