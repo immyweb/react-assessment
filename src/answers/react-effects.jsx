@@ -242,6 +242,7 @@ export function ElementMeasurer() {
   const elementRef = useRef(null);
 
   useLayoutEffect(() => {
+    // Check DOM element exists
     if (elementRef.current) {
       const rect = elementRef.current.getBoundingClientRect();
       setDimension({ width: rect.width, height: rect.height });

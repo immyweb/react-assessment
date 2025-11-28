@@ -97,6 +97,8 @@ export function ExpensiveMemoCalculator({ numbers = [1, 2, 3, 4, 5] }) {
   const t0Ref = useRef();
   const t1Ref = useRef();
 
+  // Expensive calculations are cached, and only re-run when
+  // numbers prop changes.
   const sum = useMemo(() => {
     t0Ref.current = performance.now();
     const result = numbers.reduce((acc, num) => acc + num);
@@ -137,6 +139,7 @@ export function OptimizedList() {
   ]);
   const [newItem, setNewItem] = useState('');
 
+  // These functions are not recreated unnecessarily
   const clickHandler = useCallback((id) => {
     console.log(`Item ${id} clicked!`);
   }, []);
