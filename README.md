@@ -9,7 +9,7 @@ Simple exercises that clearly isolate each concept.
 
 ## Topics covered
 
-### 1. Core React Concepts (react-fundamentals.js)
+### 1. Core React Concepts (react-fundamentals.jsx)
 
 - Component creation and JSX
 - Props and prop validation
@@ -19,7 +19,7 @@ Simple exercises that clearly isolate each concept.
 - Component composition patterns
 - Controlled vs uncontrolled components
 
-### 2. State Management (react-state.js)
+### 2. State Management (react-state.jsx)
 
 - useState hook fundamentals
 - State updates and batching
@@ -29,7 +29,7 @@ Simple exercises that clearly isolate each concept.
 - useReducer for complex state
 - State normalization techniques
 
-### 3. Effects and Side Effects (react-effects.js)
+### 3. Effects and Side Effects (react-effects.jsx)
 
 - useEffect hook patterns
 - Effect dependencies and cleanup
@@ -39,7 +39,7 @@ Simple exercises that clearly isolate each concept.
 - Race condition handling
 - Effect optimization
 
-### 4. Context and Global State (react-context.js)
+### 4. Context and Global State (react-context.jsx)
 
 - createContext and useContext
 - Context provider patterns
@@ -49,7 +49,7 @@ Simple exercises that clearly isolate each concept.
 - Custom context hooks
 - Context vs state management libraries
 
-### 5. Advanced Hooks (react-hooks.js)
+### 5. Advanced Hooks (react-hooks.jsx)
 
 - useMemo and useCallback optimization
 - useRef for DOM access and values
@@ -59,7 +59,7 @@ Simple exercises that clearly isolate each concept.
 - useLayoutEffect use cases
 - useSyncExternalStore integration
 
-### 6. Performance Optimization (react-performance.js)
+### 6. Performance Optimization (react-performance.jsx)
 
 - React.memo and memoization
 - Component splitting strategies
@@ -69,7 +69,7 @@ Simple exercises that clearly isolate each concept.
 - Render optimization patterns
 - Performance measurement tools
 
-### 7. Advanced Patterns (react-patterns.js)
+### 7. Advanced Patterns (react-patterns.jsx)
 
 - Higher-Order Components (HOCs)
 - Render props pattern
@@ -79,7 +79,7 @@ Simple exercises that clearly isolate each concept.
 - Provider pattern variations
 - Inversion of control patterns
 
-### 8. Forms and Validation (react-forms.js)
+### 8. Forms and Validation (react-forms.jsx)
 
 - Controlled form patterns
 - Form validation strategies
@@ -89,7 +89,7 @@ Simple exercises that clearly isolate each concept.
 - Custom form hooks
 - Accessibility in forms
 
-### 9. Error Handling (react-errors.js)
+### 9. Error Handling (react-errors.jsx)
 
 - Error boundaries
 - Error recovery strategies
@@ -99,32 +99,84 @@ Simple exercises that clearly isolate each concept.
 - Development vs production errors
 - Error boundary composition
 
-### 10. Testing Patterns (react-testing.js)
+### 10. Architecture and Design (react-architecture.jsx)
 
-- Component testing strategies
-- Hook testing patterns
-- Mock and stub techniques
-- Integration testing approaches
-- Accessibility testing
-- Performance testing
-- Test utilities creation
-
-### 11. Architecture and Design (react-architecture.js)
-
-- Component organization
 - Code splitting strategies
 - State architecture patterns
 - API integration patterns
-- Routing integration
 - Authentication patterns
-- Feature-based organization
 
-### 12. Concurrent Features (react-concurrent.js)
+### 11. Concurrent Features (react-concurrent.jsx)
 
 - Suspense for data fetching
-- Concurrent rendering concepts
 - useTransition for non-urgent updates
 - useDeferredValue for expensive computations
-- Server-side rendering considerations
-- Streaming and partial hydration
+- useOptimistic for optimistic updates
 - Progressive enhancement
+
+### 12. Libraries (react-libraries.jsx)
+
+- Axios - data fetching
+- React Query - date fetching
+- Redux - state management
+- Zustand - state management
+
+## React issues
+
+### State management
+
+- Unnecessary state (could it be derived?)
+- State in wrong component (should it be lifted up or down?)
+- Missing state (hardcoded values that should be dynamic)
+- Improper state updates (mutating state directly)
+
+### Hook problems
+
+- useEffect with missing dependencies
+- useEffect running too often (missing dependency array)
+- Event handlers recreated on every render (missing useCallback)
+- Expensive calculations not memoized (missing useMemo)
+
+### Common mistakes
+
+- Keys missing or using array indices as keys
+- Inline function definitions in JSX (performance issue)
+- Not handling loading/error states
+- Props not validated or typed
+
+### Code quality
+
+- Unclear variable/function names
+- Repeated code that should be extracted
+- Magic numbers or strings (should be constants)
+- Overly complex components (doing too much)
+
+### Data Fetching
+
+- Fetching in wrong place (not in useEffect)
+- No cleanup in useEffect
+- No loading states
+- No error handling
+- Race conditions (multiple fetches)
+
+### Forms
+
+- Uncontrolled inputs mixed with controlled
+- Not preventing default on form submit
+- No validation
+- Not clearing form after submit
+
+### Accessibility Issues
+
+- Missing alt text on images
+- Buttons that should be buttons (not divs with onClick)
+- Missing labels on form inputs
+- Poor heading hierarchy
+- No keyboard navigation support
+
+### Performance Red Flags
+
+- Creating objects/arrays in render
+- Not using keys properly in lists
+- Unnecessary component re-renders
+- Large components that should be split
