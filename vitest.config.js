@@ -34,18 +34,18 @@ export default defineConfig({
     // },
 
     // Browser testing configuration (optional, can be enabled for specific tests)
-    browser: {
-      enabled: false, // Set to true when you want to run browser tests
-      provider: 'playwright',
-      name: 'chromium',
-      headless: true,
-      instances: [
-        { browser: 'chromium' }
-        // Uncomment for cross-browser testing
-        // { browser: 'firefox' },
-        // { browser: 'webkit' }
-      ]
-    },
+    // browser: {
+    //   enabled: false, // Set to true when you want to run browser tests
+    //   provider: 'playwright',
+    //   name: 'chromium',
+    //   headless: true,
+    //   instances: [
+    //     { browser: 'chromium' }
+    // Uncomment for cross-browser testing
+    // { browser: 'firefox' },
+    // { browser: 'webkit' }
+    // ]
+    // },
 
     // Test execution options
     pool: 'threads',
