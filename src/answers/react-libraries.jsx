@@ -11,17 +11,12 @@
  * Run the test suite to validate your implementations.
  */
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider
-} from '@tanstack/react-query';
-import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useSelector, useDispatch } from 'react-redux';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ============================================================================
 // Exercise 1: Axios - HTTP Client Basics
@@ -36,9 +31,11 @@ import { create } from 'zustand';
  * - Default headers: { 'Content-Type': 'application/json' }
  */
 export const createAxiosInstance = () => {
-  // TODO: Import axios and create configured instance
-  // TODO: Set baseURL, timeout, and default headers
-  // TODO: Return the configured instance
+  return axios.create({
+    baseURL: 'https://api.example.com',
+    timeout: 5000,
+    headers: { 'Content-Type': 'application/json' }
+  });
 };
 
 /**
@@ -51,10 +48,44 @@ export const createAxiosInstance = () => {
  * - Display user data when loaded (name, email)
  */
 export const UserProfile = ({ userId, axiosInstance }) => {
-  // TODO: Add state for user data, loading, and error
-  // TODO: Fetch user data on mount using axiosInstance
-  // TODO: Handle loading and error states
-  // TODO: Render user information or appropriate state
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    async function getUser() {
+      try {
+        setLoading(true);
+        setError(false);
+        const response = await axiosInstance.get(`/users/${userId}`);
+        setUser(response.data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getUser();
+  }, [userId, axiosInstance]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  if (!user) {
+    return <div>No user found</div>;
+  }
+
+  return (
+    <div>
+      <p>Name: {user.name}</p>
+      <p>Email: {user.email}</p>
+    </div>
+  );
 };
 
 /**
@@ -66,10 +97,14 @@ export const UserProfile = ({ userId, axiosInstance }) => {
  * - Return modified config
  */
 export const addAuthInterceptor = (axiosInstance) => {
-  // TODO: Add request interceptor
-  // TODO: Get token from localStorage.getItem('authToken')
-  // TODO: Add Authorization header if token exists
-  // TODO: Return interceptor ID
+  const token = localStorage.getItem('authToken');
+
+  return axiosInstance.interceptors.request.use((config) => {
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  });
 };
 
 /**
@@ -85,11 +120,28 @@ export const addErrorInterceptor = (
   onUnauthorized,
   onNetworkError
 ) => {
-  // TODO: Add response interceptor
-  // TODO: Handle successful responses (return response)
-  // TODO: Handle 401 status code
-  // TODO: Handle network errors (no response)
-  // TODO: Return interceptor ID
+  return axiosInstance.interceptors.response.use(
+    (response) => {
+      return response;
+    },
+    (error) => {
+      if (error.response) {
+        // Server error
+        if (error.response.status === 401) {
+          onUnauthorized();
+          error.isUnauthorized = true; // Add custom property
+          error.customMessage = 'You are not authorized. Please log in again.';
+        }
+      } else {
+        // Network error
+        onNetworkError();
+        error.isNetworkError = true; // Add custom property
+        error.customMessage = 'Network error. Please check your connection.';
+      }
+
+      return Promise.reject(error);
+    }
+  );
 };
 
 // ============================================================================
@@ -107,12 +159,29 @@ export const addErrorInterceptor = (
  * - Show error message if fetch fails
  * - Display list of posts with title
  */
+
 export const PostsList = ({ api }) => {
-  // TODO: Import useQuery from @tanstack/react-query
-  // TODO: Setup useQuery with proper configuration
-  // TODO: Handle loading state
-  // TODO: Handle error state
-  // TODO: Render posts list
+  const { isFetching, isError, data, error } = useQuery({
+    queryKey: ['posts'],
+    queryFn: () => api.get('/posts'),
+    staleTime: 30000
+  });
+
+  if (isFetching) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <ul>
+      {data.data.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
 };
 
 /**
@@ -127,11 +196,34 @@ export const PostsList = ({ api }) => {
  * - Display post title and body
  */
 export const PostDetail = ({ postId, api }) => {
-  // TODO: Setup useQuery with queryKey including postId
-  // TODO: Use enabled option to control when query runs
-  // TODO: Handle null postId case
-  // TODO: Handle loading state
-  // TODO: Render post details
+  const { isFetching, isError, data, error } = useQuery({
+    queryKey: ['posts', postId],
+    queryFn: () => api.get(`/posts/${postId}`),
+    enabled: !!postId
+  });
+
+  if (!postId) {
+    return <div>Select a post</div>;
+  }
+
+  if (isFetching) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  const {
+    data: { title, body }
+  } = data;
+
+  return (
+    <div>
+      <h1>{title}</h1>
+      <p>{body}</p>
+    </div>
+  );
 };
 
 /**
@@ -145,12 +237,53 @@ export const PostDetail = ({ postId, api }) => {
  * - Clear form after successful submission
  */
 export const CreatePost = ({ api, queryClient }) => {
-  // TODO: Import useMutation from @tanstack/react-query
-  // TODO: Add state for title and body
-  // TODO: Setup useMutation with proper configuration
-  // TODO: Invalidate queries on success using queryClient
-  // TODO: Handle form submission
-  // TODO: Display loading and error states
+  const mutation = useMutation({
+    mutationFn: (newPost) => {
+      return api.post('/posts', newPost);
+    },
+    onSuccess: async () => {
+      setTitle('');
+      setBody('');
+      await queryClient.invalidateQueries({ queryKey: ['posts'] });
+    }
+  });
+
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+
+  function handleSubmit(evt) {
+    evt.preventDefault();
+    mutation.mutate({ title, body });
+  }
+
+  return (
+    <div>
+      {mutation.isPending && <div>Loading...</div>}
+      {mutation.isError && (
+        <div>An error occurred: {mutation.error.message}</div>
+      )}
+      {mutation.isSuccess && <div>Post added!</div>}
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="title">Title</label>
+        <input
+          name="title"
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+
+        <label htmlFor="body">Body</label>
+        <input
+          name="body"
+          id="body"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+        />
+
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  );
 };
 
 /**
@@ -164,12 +297,58 @@ export const CreatePost = ({ api, queryClient }) => {
  * - Rollback on error using previous snapshot
  * - Refetch on settled to sync with server
  */
+let nextId = 2;
 export const OptimisticTodoList = ({ api, queryClient }) => {
-  // TODO: Setup useQuery for todos list
-  // TODO: Setup useMutation with onMutate, onError, onSettled
-  // TODO: Implement optimistic update logic
-  // TODO: Handle rollback on error
-  // TODO: Invalidate queries on settled
+  const { isFetching, isError, data, error } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => api.get('/todos')
+  });
+
+  const { mutate, isPending, variables } = useMutation({
+    mutationFn: (newTodo) => api.post('/todos', newTodo),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['todos'] })
+  });
+
+  const [todoItem, setTodoItem] = useState('');
+
+  function handleSubmit(evt) {
+    evt.preventDefault();
+    mutate({ id: ++nextId, text: todoItem, completed: false });
+  }
+
+  return (
+    <>
+      <form role="form" onSubmit={handleSubmit}>
+        <label htmlFor="todoInput">Add todo</label>
+        <input
+          name="todoInput"
+          id="todoInput"
+          value={todoItem}
+          onChange={(e) => setTodoItem(e.target.value)}
+        />
+
+        <button type="submit">Add</button>
+      </form>
+      {isFetching && <div>Loading...</div>}
+      {isError && <div>An error occurred: {error.message}</div>}
+      {data && (
+        <ul>
+          {data.data.map((todo) => {
+            return (
+              <li key={todo.id}>
+                {todo.text} <span>{todo.completed}</span>
+              </li>
+            );
+          })}
+          {isPending && (
+            <li key={variables.id}>
+              {variables.text} <span>{variables.completed}</span>
+            </li>
+          )}
+        </ul>
+      )}
+    </>
+  );
 };
 
 // ============================================================================
@@ -187,11 +366,16 @@ export const OptimisticTodoList = ({ api, queryClient }) => {
  * - Return current state for unknown actions
  */
 export const counterReducer = (state = { value: 0 }, action) => {
-  // TODO: Implement switch statement for action types
-  // TODO: Handle increment action
-  // TODO: Handle decrement action
-  // TODO: Handle incrementByAmount action
-  // TODO: Return state for default case
+  switch (action.type) {
+    case 'increment':
+      return { ...state, value: state.value + 1 };
+    case 'decrement':
+      return { ...state, value: state.value - 1 };
+    case 'incrementByAmount':
+      return { ...state, value: state.value + action.payload };
+    default:
+      return state;
+  }
 };
 
 /**
@@ -205,30 +389,45 @@ export const counterReducer = (state = { value: 0 }, action) => {
  * - Display current count
  */
 export const ReduxCounter = () => {
-  // TODO: Import useSelector and useDispatch from react-redux
-  // TODO: Get count from store using useSelector
-  // TODO: Get dispatch function using useDispatch
-  // TODO: Create handlers for increment/decrement
-  // TODO: Render buttons and count display
+  const count = useSelector((state) => state.value);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <div>
+        <button
+          aria-label="Increment value"
+          onClick={() => dispatch({ type: 'increment' })}>
+          Increment
+        </button>
+        <span>{count}</span>
+        <button
+          aria-label="Decrement value"
+          onClick={() => dispatch({ type: 'decrement' })}>
+          Decrement
+        </button>
+      </div>
+    </div>
+  );
 };
 
 /**
  * Create action creators for counter
  *
  * Requirements:
- * - increment() returns { type: 'counter/increment' }
- * - decrement() returns { type: 'counter/decrement' }
- * - incrementByAmount(amount) returns { type: 'counter/incrementByAmount', payload: amount }
+ * - increment() returns { type: 'increment' }
+ * - decrement() returns { type: 'decrement' }
+ * - incrementByAmount(amount) returns { type: 'incrementByAmount', payload: amount }
  */
 export const counterActions = {
   increment: () => {
-    // TODO: Return increment action
+    return { type: 'increment' };
   },
   decrement: () => {
-    // TODO: Return decrement action
+    return { type: 'decrement' };
   },
   incrementByAmount: (amount) => {
-    // TODO: Return incrementByAmount action with payload
+    return { type: 'incrementByAmount', payload: amount };
   }
 };
 
@@ -241,12 +440,23 @@ export const counterActions = {
  * - 'todos/todoToggled': Toggle completed status for todo with matching id
  * - 'todos/todoDeleted': Remove todo with matching id
  */
+
 export const todosReducer = (state = [], action) => {
-  // TODO: Implement switch for action types
-  // TODO: Handle todoAdded - add new todo to array
-  // TODO: Handle todoToggled - toggle completed for matching id
-  // TODO: Handle todoDeleted - filter out matching id
-  // TODO: Return state for default case
+  switch (action.type) {
+    case 'todos/todoAdded':
+      return [
+        ...state,
+        { id: ++nextId, text: action.payload, completed: false }
+      ];
+    case 'todos/todoToggled':
+      return state.map((t) => {
+        return t.id === action.id ? { ...t, completed: !t.completed } : t;
+      });
+    case 'todos/todoDeleted':
+      return state.filter((t) => t.id !== action.id);
+    default:
+      return state;
+  }
 };
 
 // ============================================================================
@@ -263,9 +473,14 @@ export const todosReducer = (state = [], action) => {
  * - Action: reset() - sets count to 0
  */
 export const createCounterStore = () => {
-  // TODO: Import create from zustand
-  // TODO: Define store with count state and actions
-  // TODO: Return the created store hook
+  const useCounter = create((set) => ({
+    count: 0,
+    increment: () => set((state) => ({ count: state.count + 1 })),
+    decrement: () => set((state) => ({ count: state.count - 1 })),
+    reset: () => set({ count: 0 })
+  }));
+
+  return useCounter;
 };
 
 /**
@@ -280,11 +495,26 @@ export const createCounterStore = () => {
  * - Selector: selectIsEmpty - returns users.length === 0
  */
 export const createUsersStore = () => {
-  // TODO: Import create from zustand
-  // TODO: Define state (users, loading)
-  // TODO: Define actions (setUsers, setLoading, addUser)
-  // TODO: Define selectors (selectUserCount, selectIsEmpty)
-  // TODO: Return the created store hook
+  const useUsers = create((set, get) => ({
+    users: [],
+    loading: false,
+    setUsers: (newUsers) =>
+      set((state) => ({
+        users: [...state.users, ...newUsers]
+      })),
+    setLoading: (bool) =>
+      set(() => ({
+        loading: bool
+      })),
+    addUser: (user) =>
+      set((state) => ({
+        users: [...state.users, user]
+      })),
+    selectUserCount: () => get().users.length,
+    selectIsEmpty: () => get().users.length === 0
+  }));
+
+  return useUsers;
 };
 
 /**
@@ -297,12 +527,26 @@ export const createUsersStore = () => {
  * - Persist to localStorage with name 'theme-storage'
  */
 export const createThemeStore = () => {
-  // TODO: Import create from zustand
-  // TODO: Import persist and createJSONStorage from zustand/middleware
-  // TODO: Wrap store creation with persist middleware
-  // TODO: Configure storage name
-  // TODO: Define theme state and actions
-  // TODO: Return the created store hook
+  const useTheme = create(
+    persist(
+      (set) => ({
+        theme: 'light',
+        setTheme: (newTheme) =>
+          set(() => ({
+            theme: newTheme
+          })),
+        toggleTheme: () =>
+          set((state) => ({
+            theme: state.theme === 'light' ? 'dark' : 'light'
+          }))
+      }),
+      {
+        name: 'theme-storage'
+      }
+    )
+  );
+
+  return useTheme;
 };
 
 /**
@@ -316,11 +560,19 @@ export const createThemeStore = () => {
  * - Render reset button
  */
 export const ZustandCounter = ({ useCounterStore }) => {
-  // TODO: Get count from store
-  // TODO: Get increment action from store
-  // TODO: Get decrement action from store
-  // TODO: Get reset action from store
-  // TODO: Render UI with count and buttons
+  const count = useCounterStore((state) => state.count);
+  const increment = useCounterStore((state) => state.increment);
+  const decrement = useCounterStore((state) => state.decrement);
+  const reset = useCounterStore((state) => state.reset);
+
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={increment}>Increment</button>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
 };
 
 /**
@@ -337,12 +589,22 @@ export const ZustandCounter = ({ useCounterStore }) => {
  *   - Sets loading to false when done
  */
 export const createAsyncStore = () => {
-  // TODO: Import create from zustand
-  // TODO: Define state (data, loading, error)
-  // TODO: Define fetchData async action
-  // TODO: Handle loading states properly
-  // TODO: Handle errors properly
-  // TODO: Return the created store hook
+  const useData = create((set) => ({
+    data: null,
+    loading: false,
+    error: null,
+    fetchData: async (api, endpoint) => {
+      set({ loading: true, error: null });
+      try {
+        const response = await api.get(endpoint);
+        set({ loading: false, data: response.data });
+      } catch (err) {
+        set({ loading: false, error: new Error(err.message) });
+      }
+    }
+  }));
+
+  return useData;
 };
 
 // ============================================================================
@@ -386,26 +648,3 @@ export const createMockApi = () => {
     }
   };
 };
-
-/**
- * Error boundary for testing error handling
- */
-export class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        this.props.fallback || <div>Error: {this.state.error.message}</div>
-      );
-    }
-    return this.props.children;
-  }
-}

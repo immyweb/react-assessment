@@ -11,17 +11,12 @@
  * Run the test suite to validate your implementations.
  */
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider
-} from '@tanstack/react-query';
-import { createSlice, configureStore } from '@reduxjs/toolkit';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { useSelector, useDispatch } from 'react-redux';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // ============================================================================
 // Exercise 1: Axios - HTTP Client Basics
@@ -298,7 +293,7 @@ export const createUsersStore = () => {
  */
 export const createThemeStore = () => {
   // TODO: Import create from zustand
-  // TODO: Import persist and createJSONStorage from zustand/middleware
+  // TODO: Import persist from zustand/middleware
   // TODO: Wrap store creation with persist middleware
   // TODO: Configure storage name
   // TODO: Define theme state and actions
@@ -386,26 +381,3 @@ export const createMockApi = () => {
     }
   };
 };
-
-/**
- * Error boundary for testing error handling
- */
-export class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        this.props.fallback || <div>Error: {this.state.error.message}</div>
-      );
-    }
-    return this.props.children;
-  }
-}
