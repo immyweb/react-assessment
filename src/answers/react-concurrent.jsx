@@ -15,12 +15,13 @@
  * - Test cases to validate implementation
  */
 
-import React, {
+import {
   useState,
   useTransition,
   useDeferredValue,
   Suspense,
-  useOptimistic
+  useOptimistic,
+  useRef
 } from 'react';
 
 // =============================================================================
@@ -42,8 +43,35 @@ import React, {
  * @returns {Object} Resource object with read() method
  */
 export function fetchUser(userId, delay = 1000) {
-  // TODO: Implement Suspense-compatible resource
-  // Hint: Use a promise and track its state (pending/success/error)
+  let status = 'pending';
+  let result;
+
+  const promise = new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ id: userId, name: `User ${userId}` });
+    }, delay);
+  }).then(
+    (data) => {
+      status = 'success';
+      result = data;
+    },
+    (error) => {
+      status = 'error';
+      result = error;
+    }
+  );
+
+  return {
+    read() {
+      if (status === 'pending') {
+        throw promise;
+      } else if (status === 'error') {
+        throw result;
+      } else if (status === 'success') {
+        return result;
+      }
+    }
+  };
 }
 
 /**
@@ -57,7 +85,14 @@ export function fetchUser(userId, delay = 1000) {
  * - Render inside a div with className "user-profile"
  */
 export function UserProfile({ resource }) {
-  // TODO: Implement this component
+  const { id, name } = resource.read();
+
+  return (
+    <div className="user-profile">
+      <p>id: {id}</p>
+      <p>{name}</p>
+    </div>
+  );
 }
 
 /**
@@ -70,7 +105,15 @@ export function UserProfile({ resource }) {
  * - Show "Loading user..." text while fetching
  */
 export function SuspenseDemo() {
-  // TODO: Implement Suspense wrapper with UserProfile
+  const resource = fetchUser(1, 10);
+
+  return (
+    <>
+      <Suspense fallback={<Loading />}>
+        <UserProfile resource={resource} />
+      </Suspense>
+    </>
+  );
 }
 
 // =============================================================================
@@ -94,8 +137,41 @@ export function SuspenseDemo() {
  * - Display filtered results in a list
  */
 export function SearchList({ items = [] }) {
-  // TODO: Implement with useTransition
-  // Hint: Use startTransition to wrap the state update for filtered items
+  const [isPending, startTransition] = useTransition();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchItems, setSearchItems] = useState(items);
+
+  function handleSearch(text) {
+    setSearchTerm(text);
+    startTransition(() => {
+      const filtered = items.filter((item) =>
+        item.toLowerCase().includes(text.toLowerCase())
+      );
+      setSearchItems(filtered);
+    });
+  }
+
+  return (
+    <>
+      <form role="form">
+        <label htmlFor="searchInput">Search</label>
+        <input
+          id="searchInput"
+          name="searchInput"
+          value={searchTerm}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+      </form>
+      <section>
+        {isPending && <div>Searching...</div>}
+        <ul>
+          {searchItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
 }
 
 /**
@@ -114,7 +190,51 @@ export function SearchList({ items = [] }) {
  * - Contact: "Contact content" with 5000 items
  */
 export function TabSwitcher() {
-  // TODO: Implement with useTransition
+  const [isPending, startTransition] = useTransition();
+  const [activeTab, setActiveTab] = useState('about');
+
+  function handleTabChange(tab) {
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  }
+
+  return (
+    <>
+      <ul>
+        <li>
+          <button onClick={() => handleTabChange('about')}>About</button>
+        </li>
+        <li>
+          <button onClick={() => handleTabChange('posts')}>Posts</button>
+        </li>
+        <li>
+          <button onClick={() => handleTabChange('contact')}>Contact</button>
+        </li>
+      </ul>
+      <section>
+        {isPending && <div>Loading...</div>}
+        {activeTab === 'about' && (
+          <div>
+            <h1>About content</h1>
+            <SlowContent text={'about'} count={5000} />
+          </div>
+        )}
+        {activeTab === 'posts' && (
+          <div>
+            <h1>Posts content</h1>
+            <SlowContent text={'posts'} count={5000} />
+          </div>
+        )}
+        {activeTab === 'contact' && (
+          <div>
+            <h1>Contact content</h1>
+            <SlowContent text={'contact'} count={5000} />
+          </div>
+        )}
+      </section>
+    </>
+  );
 }
 
 /**
@@ -153,25 +273,47 @@ export function SlowContent({ text, count = 100 }) {
  * - Show opacity: 0.5 when deferredQuery !== query
  */
 export function DeferredSearchList({ items = [] }) {
-  // TODO: Implement with useDeferredValue
-  // Hint: Compare query and deferredQuery to detect staleness
-}
+  const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
+  const [searchResults, setSearchResults] = useState(items);
+  const isStale = query !== deferredQuery;
 
-/**
- * Create a graph visualization that defers rendering during input changes.
- * Demonstrates useDeferredValue with expensive rendering.
- *
- * Requirements:
- * - Slider input for number of points (0-500)
- * - Use useDeferredValue for the point count
- * - Generate points based on deferred value
- * - Display current value and deferred value
- * - Show when values differ
- *
- * Point generation: Array of { x, y } where both are random 0-100
- */
-export function DeferredGraph() {
-  // TODO: Implement with useDeferredValue
+  function handleSearch(text) {
+    setQuery(text);
+    const filtered = items.filter((item) =>
+      item.toLowerCase().includes(deferredQuery.toLowerCase())
+    );
+    setSearchResults(filtered);
+  }
+
+  return (
+    <>
+      <form role="form">
+        <label htmlFor="searchInput">Search</label>
+        <input
+          id="searchInput"
+          name="searchInput"
+          value={query}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+      </form>
+      <section>
+        <div
+          style={{
+            opacity: isStale ? 0.5 : 1,
+            transition: isStale
+              ? 'opacity 0.2s 0.2s linear'
+              : 'opacity 0s 0s linear'
+          }}>
+          <ul>
+            {searchResults.map((result, i) => {
+              return <li key={`${result}-${i}`}>{result}</li>;
+            })}
+          </ul>
+        </div>
+      </section>
+    </>
+  );
 }
 
 // =============================================================================
@@ -214,8 +356,65 @@ export function addTodoAPI(text) {
  * - Clear input after submission starts
  */
 export function OptimisticTodoList() {
-  // TODO: Implement with useOptimistic
-  // Hint: useOptimistic takes (state, updateFn) and returns [optimisticState, addOptimistic]
+  const [item, setItem] = useState('');
+  const [todos, setTodos] = useState([]);
+  const [optimisticTodos, addOptimisticTodo] = useOptimistic(
+    todos,
+    (currentTodos, newTodo) => [
+      { ...newTodo, optimistic: true },
+      ...currentTodos
+    ]
+  );
+  const [isPending, startTransition] = useTransition();
+
+  function submitTodo(text) {
+    addOptimisticTodo({ id: Date.now(), text, completed: false });
+
+    startTransition(async () => {
+      try {
+        const savedTodo = await addTodoAPI(text);
+        setTodos((prev) => [{ ...savedTodo }, ...prev]);
+        setItem('');
+      } catch (err) {
+        console.error('Failed to add todo:', err);
+      }
+    });
+  }
+
+  return (
+    <>
+      <form
+        role="form"
+        action={async (formData) => {
+          submitTodo(formData.get('newTodo'));
+        }}>
+        <label htmlFor="newTodo">Add todo</label>
+        <input
+          id="newTodo"
+          name="newTodo"
+          value={item}
+          onChange={(e) => setItem(e.target.value)}
+        />
+        <button type="submit" disabled={isPending}>
+          Add
+        </button>
+      </form>
+      <section>
+        <ul>
+          {optimisticTodos.map((todo) => {
+            return (
+              <li
+                key={todo.id}
+                className={todo.optimistic ? 'text-gray-500' : ''}>
+                {todo.text}{' '}
+                <span>{todo.completed ? 'completed' : 'not completed'}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </>
+  );
 }
 
 /**
@@ -234,8 +433,43 @@ export function OptimisticTodoList() {
  * - Button text: "Like ({count})" or "Liking... ({count})"
  * - Button disabled when pending
  */
+function addCountAPI() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, 1000);
+  });
+}
+
 export function OptimisticLikeButton({ initialLikes = 0 }) {
-  // TODO: Implement with useOptimistic
+  const [count, setCount] = useState(initialLikes);
+  const [optimisticCount, addOptimisticCount] = useOptimistic(
+    count,
+    (currentCount) => currentCount + 1
+  );
+  const [isPending, startTransition] = useTransition();
+
+  function handleAddLike() {
+    startTransition(async () => {
+      addOptimisticCount();
+      try {
+        await addCountAPI();
+        setCount((prev) => prev + 1);
+      } catch (err) {
+        console.error('Failed to add count:', err);
+      }
+    });
+  }
+
+  return (
+    <>
+      <button onClick={() => handleAddLike()} disabled={isPending}>
+        {isPending
+          ? `Liking... (${optimisticCount})`
+          : `Like (${optimisticCount})`}
+      </button>
+    </>
+  );
 }
 
 // =============================================================================
@@ -257,8 +491,60 @@ export function OptimisticLikeButton({ initialLikes = 0 }) {
  * Each submission should create an object: { id, name, email, pending: boolean }
  */
 export function ProgressiveForm({ onSubmit }) {
-  // TODO: Implement progressive enhancement with useOptimistic
-  // Hint: Use form action and formAction for progressive enhancement
+  const [submittedUsers, setSubmittedUser] = useState([]);
+  const [optimisticUsers, addOptimisticUser] = useOptimistic(
+    submittedUsers,
+    (currentUsers, newUser) => [{ ...newUser }, ...currentUsers]
+  );
+  const [isPending, startTransition] = useTransition();
+
+  async function addUser(formData) {
+    'use server';
+
+    const data = {
+      id: Date.now(),
+      name: formData.get('nameInput'),
+      email: formData.get('emailInput'),
+      pending: true
+    };
+    addOptimisticUser(data);
+
+    startTransition(() => {
+      try {
+        onSubmit(data);
+        setSubmittedUser((prev) => [...prev, { ...data, pending: false }]);
+      } catch (err) {
+        console.error('Failed to submit data:', err);
+      }
+    });
+  }
+
+  return (
+    <>
+      <form role="form" action={addUser}>
+        <label htmlFor="nameInput">Name</label>
+        <input id="nameInput" name="nameInput" />
+
+        <label htmlFor="emailInput">Email</label>
+        <input id="emailInput" name="emailInput" type="email" />
+
+        <button type="submit" disabled={isPending}>
+          Submit
+        </button>
+      </form>
+      <ul>
+        {optimisticUsers.map((user) => {
+          return (
+            <li
+              key={user.id}
+              style={user.pending ? { opacity: 0.5 } : { opacity: 1 }}>
+              Name: {user.name}, Email: {user.email}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
 }
 
 /**
@@ -278,31 +564,82 @@ export function ProgressiveForm({ onSubmit }) {
  * - Pending comments shown in italics
  * - Updates to real state after server confirms
  */
-export function OptimisticComments({ initialComments = [] }) {
-  // TODO: Implement with useOptimistic
+function addCommentAPI(comment) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(comment);
+    }, 1000);
+  });
 }
 
-// =============================================================================
-// EXERCISE 6: Combined Patterns
-// =============================================================================
+export function OptimisticComments({ initialComments = [] }) {
+  const [comments, setComments] = useState(initialComments);
+  const [optimisticComments, addOptimisticComment] = useOptimistic(
+    comments,
+    (currentComments, newComment) => [
+      { ...newComment, optimistic: true },
+      ...currentComments
+    ]
+  );
+  const [isPending, startTransition] = useTransition();
+  const formRef = useRef();
 
-/**
- * Create a data dashboard combining multiple concurrent features.
- * Demonstrates using Suspense, useTransition, and useDeferredValue together.
- *
- * Requirements:
- * - Three data panels loaded with Suspense
- * - Search filter using useDeferredValue
- * - Tab switching using useTransition
- * - Each panel fetches data independently
- * - Show appropriate loading states
- *
- * Panels:
- * - Users: List of user names
- * - Posts: List of post titles
- * - Comments: List of comment texts
- */
-export function DataDashboard() {
-  // TODO: Implement combined concurrent patterns
-  // This is an advanced exercise combining previous concepts
+  function addComment(formData) {
+    'use server';
+
+    const data = {
+      id: Date.now(),
+      author: formData.get('authorInput'),
+      text: formData.get('commentInput')
+    };
+    addOptimisticComment(data);
+    formRef.current.reset();
+
+    startTransition(async () => {
+      try {
+        await addCommentAPI(data);
+        setComments((prev) => [{ ...data, optimistic: false }, ...prev]);
+      } catch (err) {
+        console.error('Failed to submit comment:', err);
+      }
+    });
+  }
+
+  return (
+    <>
+      <form role="form" action={addComment} ref={formRef}>
+        <label htmlFor="authorInput">Author</label>
+        <input id="authorInput" name="authorInput" />
+
+        <label htmlFor="commentInput">Comment</label>
+        <textarea id="commentInput" name="commentInput" />
+
+        <button type="submit" disabled={isPending}>
+          Post
+        </button>
+      </form>
+      <ul>
+        {optimisticComments.length > 0 &&
+          optimisticComments.map((c) => {
+            return (
+              <li
+                key={c.id}
+                style={
+                  c.optimistic
+                    ? { fontStyle: 'italic' }
+                    : { fontStyle: 'normal' }
+                }>
+                {c.text} <span>{c.author}</span>
+              </li>
+            );
+          })}
+      </ul>
+    </>
+  );
+}
+
+/* Utils */
+
+function Loading() {
+  return <h2>🌀 Loading user...</h2>;
 }

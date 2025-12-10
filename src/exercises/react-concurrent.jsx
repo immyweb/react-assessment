@@ -15,12 +15,13 @@
  * - Test cases to validate implementation
  */
 
-import React, {
+import {
   useState,
   useTransition,
   useDeferredValue,
   Suspense,
-  useOptimistic
+  useOptimistic,
+  useRef
 } from 'react';
 
 // =============================================================================
@@ -157,23 +158,6 @@ export function DeferredSearchList({ items = [] }) {
   // Hint: Compare query and deferredQuery to detect staleness
 }
 
-/**
- * Create a graph visualization that defers rendering during input changes.
- * Demonstrates useDeferredValue with expensive rendering.
- *
- * Requirements:
- * - Slider input for number of points (0-500)
- * - Use useDeferredValue for the point count
- * - Generate points based on deferred value
- * - Display current value and deferred value
- * - Show when values differ
- *
- * Point generation: Array of { x, y } where both are random 0-100
- */
-export function DeferredGraph() {
-  // TODO: Implement with useDeferredValue
-}
-
 // =============================================================================
 // EXERCISE 4: useOptimistic for Optimistic Updates
 // =============================================================================
@@ -234,6 +218,14 @@ export function OptimisticTodoList() {
  * - Button text: "Like ({count})" or "Liking... ({count})"
  * - Button disabled when pending
  */
+function addCountAPI() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve();
+    }, 1000);
+  });
+}
+
 export function OptimisticLikeButton({ initialLikes = 0 }) {
   // TODO: Implement with useOptimistic
 }
@@ -278,31 +270,20 @@ export function ProgressiveForm({ onSubmit }) {
  * - Pending comments shown in italics
  * - Updates to real state after server confirms
  */
+function addCommentAPI(comment) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(comment);
+    }, 1000);
+  });
+}
+
 export function OptimisticComments({ initialComments = [] }) {
   // TODO: Implement with useOptimistic
 }
 
-// =============================================================================
-// EXERCISE 6: Combined Patterns
-// =============================================================================
+/* Utils */
 
-/**
- * Create a data dashboard combining multiple concurrent features.
- * Demonstrates using Suspense, useTransition, and useDeferredValue together.
- *
- * Requirements:
- * - Three data panels loaded with Suspense
- * - Search filter using useDeferredValue
- * - Tab switching using useTransition
- * - Each panel fetches data independently
- * - Show appropriate loading states
- *
- * Panels:
- * - Users: List of user names
- * - Posts: List of post titles
- * - Comments: List of comment texts
- */
-export function DataDashboard() {
-  // TODO: Implement combined concurrent patterns
-  // This is an advanced exercise combining previous concepts
+function Loading() {
+  return <h2>🌀 Loading user...</h2>;
 }

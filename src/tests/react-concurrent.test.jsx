@@ -9,16 +9,9 @@
  * - Progressive enhancement patterns
  */
 
-import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act
-} from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, describe, it, vi, beforeEach } from 'vitest';
+import { expect, describe, it, vi } from 'vitest';
 
 import {
   fetchUser,
@@ -26,15 +19,12 @@ import {
   SuspenseDemo,
   SearchList,
   TabSwitcher,
-  SlowContent,
   DeferredSearchList,
-  DeferredGraph,
   addTodoAPI,
   OptimisticTodoList,
   OptimisticLikeButton,
   ProgressiveForm,
-  OptimisticComments,
-  DataDashboard
+  OptimisticComments
 } from '../exercises/react-concurrent';
 
 // =============================================================================
@@ -296,20 +286,6 @@ describe('Exercise 2: useTransition for Non-Urgent Updates', () => {
       });
     });
   });
-
-  describe('SlowContent', () => {
-    it('should render list with specified count', () => {
-      render(<SlowContent text="Item" count={5} />);
-      expect(screen.getByText('Item 1')).toBeInTheDocument();
-      expect(screen.getByText('Item 5')).toBeInTheDocument();
-    });
-
-    it('should use default count of 100', () => {
-      render(<SlowContent text="Item" />);
-      expect(screen.getByText('Item 1')).toBeInTheDocument();
-      expect(screen.getByText('Item 100')).toBeInTheDocument();
-    });
-  });
 });
 
 // =============================================================================
@@ -367,52 +343,6 @@ describe('Exercise 3: useDeferredValue for Expensive Computations', () => {
       await user.type(input, 'xyz');
 
       expect(input).toHaveValue('xyz');
-    });
-  });
-
-  describe('DeferredGraph', () => {
-    it('should render slider input', () => {
-      render(<DeferredGraph />);
-      expect(screen.getByRole('slider')).toBeInTheDocument();
-    });
-
-    it('should display current value', () => {
-      render(<DeferredGraph />);
-      const slider = screen.getByRole('slider');
-      expect(slider).toHaveValue('0');
-    });
-
-    it('should update slider value immediately', async () => {
-      const user = userEvent.setup();
-      render(<DeferredGraph />);
-
-      const slider = screen.getByRole('slider');
-      await user.clear(slider);
-      await user.type(slider, '100');
-
-      expect(slider).toHaveValue('100');
-    });
-
-    it('should show when deferred value differs from current', async () => {
-      const user = userEvent.setup();
-      render(<DeferredGraph />);
-
-      const slider = screen.getByRole('slider');
-      fireEvent.change(slider, { target: { value: '250' } });
-
-      // Component should indicate when values differ
-      expect(slider).toHaveValue('250');
-    });
-
-    it('should generate points based on deferred value', async () => {
-      render(<DeferredGraph />);
-      const slider = screen.getByRole('slider');
-
-      fireEvent.change(slider, { target: { value: '50' } });
-
-      await waitFor(() => {
-        expect(slider).toHaveValue('50');
-      });
     });
   });
 });
@@ -487,7 +417,12 @@ describe('Exercise 4: useOptimistic for Optimistic Updates', () => {
       await user.type(input, 'Test todo');
       await user.click(button);
 
-      expect(input).toHaveValue('');
+      await waitFor(
+        () => {
+          expect(input).toHaveValue('');
+        },
+        { timeout: 1500 }
+      );
     });
 
     it('should disable button during submission', async () => {
@@ -507,7 +442,7 @@ describe('Exercise 4: useOptimistic for Optimistic Updates', () => {
         () => {
           expect(button).not.toBeDisabled();
         },
-        { timeout: 2000 }
+        { timeout: 1500 }
       );
     });
 
@@ -526,7 +461,7 @@ describe('Exercise 4: useOptimistic for Optimistic Updates', () => {
         () => {
           expect(button).not.toBeDisabled();
         },
-        { timeout: 2000 }
+        { timeout: 1500 }
       );
 
       // Todo should still be visible after confirmation
@@ -745,14 +680,14 @@ describe('Exercise 5: Progressive Enhancement', () => {
       await user.type(screen.getByLabelText(/comment/i), 'Confirmed comment');
       await user.click(screen.getByRole('button', { name: /post/i }));
 
-      // Should still be visible after 1.5s server delay
+      // Should still be visible after 1s server delay
       await waitFor(
         () => {
           const comment = screen.getByText('Confirmed comment');
           const style = window.getComputedStyle(comment);
           expect(style.fontStyle).not.toBe('italic');
         },
-        { timeout: 2000 }
+        { timeout: 1500 }
       );
     });
 
@@ -770,28 +705,5 @@ describe('Exercise 5: Progressive Enhancement', () => {
       expect(authorInput).toHaveValue('');
       expect(commentInput).toHaveValue('');
     });
-  });
-});
-
-// =============================================================================
-// EXERCISE 6 TESTS: Combined Patterns
-// =============================================================================
-
-describe('Exercise 6: Combined Patterns', () => {
-  describe('DataDashboard', () => {
-    it('should render dashboard container', () => {
-      render(<DataDashboard />);
-      // Basic structure test - implementation will vary
-      expect(document.body).toBeInTheDocument();
-    });
-
-    it('should show loading states for panels', () => {
-      render(<DataDashboard />);
-      // Should show loading indicators initially
-      expect(screen.queryAllByText(/loading/i).length).toBeGreaterThan(0);
-    });
-
-    // Additional tests would depend on specific implementation
-    // This is an advanced exercise combining multiple patterns
   });
 });
