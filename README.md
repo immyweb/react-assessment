@@ -83,13 +83,20 @@ Simple exercises that clearly isolate each concept.
 
 - Controlled form patterns
 - Form validation strategies
+- Accessibility in forms
+- useFormStatus
+- useActionState
+- React Hook Form
+- Zod validation
+
+### 9. Forms and Validation (react-forms-adv.jsx)
+
 - Dynamic form generation
 - File upload handling
 - Form state management
 - Custom form hooks
-- Accessibility in forms
 
-### 9. Error Handling (react-errors.jsx)
+### 10. Error Handling (react-errors.jsx)
 
 - Error boundaries
 - Error recovery strategies
@@ -99,14 +106,14 @@ Simple exercises that clearly isolate each concept.
 - Development vs production errors
 - Error boundary composition
 
-### 10. Architecture and Design (react-architecture.jsx)
+### 11. Architecture and Design (react-architecture.jsx)
 
 - Code splitting strategies
 - State architecture patterns
 - API integration patterns
 - Authentication patterns
 
-### 11. Concurrent Features (react-concurrent.jsx)
+### 12. Concurrent Features (react-concurrent.jsx)
 
 - Suspense for data fetching
 - useTransition for non-urgent updates
@@ -114,12 +121,22 @@ Simple exercises that clearly isolate each concept.
 - useOptimistic for optimistic updates
 - Progressive enhancement
 
-### 12. Libraries (react-libraries.jsx)
+### 13. Libraries (react-libraries.jsx)
 
 - Axios - data fetching
 - React Query - date fetching
 - Redux - state management
 - Zustand - state management
+
+### 14. Testing Patterns (react-testing.js)
+
+- Component testing strategies
+- Hook testing patterns
+- Mock and stub techniques
+- Integration testing approaches
+- Accessibility testing
+- Performance testing
+- Test utilities creation
 
 ## React issues
 

@@ -2,188 +2,16 @@
  * React Forms and Validation Exercises
  *
  * This file contains exercises covering React forms:
- * - Controlled form patterns
- * - Form validation strategies
  * - Dynamic form generation
  * - File upload handling
  * - Form state management
  * - Custom form hooks
- * - Accessibility in forms
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
-import React, { useState, useRef, useReducer } from 'react';
+import { useState, useRef, useReducer } from 'react';
 
 // =============================================================================
-// EXERCISE 1: Controlled Form Patterns
-// =============================================================================
-
-/**
- * Create a simple controlled form with text inputs.
- * All inputs should be controlled (value bound to state).
- *
- * Requirements:
- * - Name input (text)
- * - Email input (email type)
- * - Message textarea
- * - Submit button
- * - All inputs controlled with state
- * - onSubmit callback receives form data: { name, email, message }
- * - Prevent default form submission
- * - Clear form after successful submission
- *
- * Accessibility:
- * - Proper labels for all inputs
- * - Associated with htmlFor/id
- */
-export function ControlledForm({ onSubmit }) {
-  // TODO: Implement controlled form
-  // Hint: Use individual state for each field or single state object
-}
-
-/**
- * Create a controlled form with multiple input types.
- * Demonstrates handling different input types in controlled manner.
- *
- * Requirements:
- * - Text input for username
- * - Email input
- * - Password input (type="password")
- * - Number input for age
- * - Select dropdown for country (US, UK, Canada, Other)
- * - Checkbox for "agree to terms"
- * - Radio buttons for role (user, admin)
- * - Submit button (disabled if terms not agreed)
- * - onSubmit receives all form data
- * - Clear form after submission
- *
- * Accessibility:
- * - All inputs have labels
- * - Fieldset/legend for radio group
- */
-export function MultiInputForm({ onSubmit }) {
-  // TODO: Implement form with multiple input types
-}
-
-/**
- * Create a controlled form with nested object state.
- * Demonstrates managing complex form state structure.
- *
- * Requirements:
- * - Form data structure: { personal: { firstName, lastName }, contact: { email, phone } }
- * - Four inputs: firstName, lastName, email, phone
- * - Update nested state properly
- * - Display current state as JSON (data-testid="form-state")
- * - Submit button
- * - onSubmit receives nested object
- *
- * State structure:
- * {
- *   personal: { firstName: '', lastName: '' },
- *   contact: { email: '', phone: '' }
- * }
- */
-export function NestedStateForm({ onSubmit }) {
-  // TODO: Implement form with nested state
-  // Hint: Use spread operator to update nested objects immutably
-}
-
-// =============================================================================
-// EXERCISE 2: Form Validation Strategies
-// =============================================================================
-
-/**
- * Create a form with real-time validation.
- * Show validation errors as user types.
- *
- * Requirements:
- * - Email input with validation
- * - Password input with validation rules:
- *   * Min 8 characters
- *   * At least one uppercase letter
- *   * At least one number
- * - Show errors below each field (className "error")
- * - Validate on change (real-time)
- * - Submit button disabled if form invalid
- * - onSubmit only called if valid
- *
- * Error messages:
- * - Email: "Invalid email format"
- * - Password: "Password must be at least 8 characters", etc.
- */
-export function RealtimeValidationForm({ onSubmit }) {
-  // TODO: Implement real-time validation
-  // Hint: Validate in onChange handlers, store errors in state
-}
-
-/**
- * Create a form with validation on blur (touched fields).
- * Only show errors for fields that have been touched.
- *
- * Requirements:
- * - Name input (required, min 2 characters)
- * - Email input (required, valid format)
- * - Phone input (optional, but if filled must match pattern)
- * - Track touched state for each field
- * - Show errors only for touched fields
- * - Validate on blur
- * - Submit validates all and shows all errors
- * - Error messages have className "error"
- *
- * Phone pattern: XXX-XXX-XXXX or (XXX) XXX-XXXX
- */
-export function TouchedValidationForm({ onSubmit }) {
-  // TODO: Implement validation on blur with touched tracking
-}
-
-/**
- * Create a form with async validation.
- * Simulate checking if username is available.
- *
- * Requirements:
- * - Username input
- * - Check availability on blur (simulate 500ms API call)
- * - Show "Checking..." while validating
- * - Show "Username taken" or "Username available"
- * - Submit disabled while checking or if taken
- * - Available usernames: Any except "admin", "user", "test"
- * - Use data-testid="validation-status" for status message
- *
- * States: idle, checking, available, taken
- */
-export function AsyncValidationForm({ onSubmit }) {
-  // TODO: Implement async validation
-  // Hint: Use setTimeout to simulate API call, useEffect for cleanup
-}
-
-/**
- * Create a form with custom validation schema.
- * Demonstrates validation function pattern.
- *
- * Requirements:
- * - Define validation schema object
- * - Validate function that checks all rules
- * - Form fields: email, password, confirmPassword
- * - Validation rules:
- *   * email: required, valid format
- *   * password: required, min 8 chars
- *   * confirmPassword: required, must match password
- * - Show all errors or field-specific errors
- * - Validate on submit
- * - Display errors with data-testid="error-{fieldName}"
- */
-export function SchemaValidationForm({ onSubmit }) {
-  // TODO: Implement schema-based validation
-  // Hint: Create validateForm function that returns errors object
-}
-
-// =============================================================================
-// EXERCISE 3: Dynamic Form Generation
+// EXERCISE 1: Dynamic Form Generation
 // =============================================================================
 
 /**
@@ -270,7 +98,7 @@ export function MultiStepForm({ onSubmit }) {
 }
 
 // =============================================================================
-// EXERCISE 4: File Upload Handling
+// EXERCISE 2: File Upload Handling
 // =============================================================================
 
 /**
@@ -339,7 +167,7 @@ export function DragDropUploadForm({ onSubmit }) {
 }
 
 // =============================================================================
-// EXERCISE 5: Form State Management
+// EXERCISE 3: Form State Management
 // =============================================================================
 
 /**
@@ -403,7 +231,7 @@ export function AutoSaveForm({ onSubmit }) {
 }
 
 // =============================================================================
-// EXERCISE 6: Custom Form Hooks
+// EXERCISE 4: Custom Form Hooks
 // =============================================================================
 
 /**
@@ -484,94 +312,6 @@ export function FormWithCustomHook({ onSubmit }) {
 export function useFileInput(options = {}) {
   // TODO: Implement file input hook
   // Hint: Use useRef for cleanup, useEffect for URL.revokeObjectURL
-}
-
-// =============================================================================
-// EXERCISE 7: Accessibility in Forms
-// =============================================================================
-
-/**
- * Create a fully accessible form.
- * Demonstrates all accessibility best practices.
- *
- * Requirements:
- * - All inputs have associated labels (htmlFor/id)
- * - Required fields marked with aria-required
- * - Error messages associated with aria-describedby
- * - Error messages have role="alert" for screen readers
- * - Fieldset and legend for grouped inputs
- * - Submit button shows loading state with aria-busy
- * - Focus management (focus first error on submit)
- *
- * Fields: firstName, lastName, email, subscribe (checkbox), role (radio)
- * Validation: firstName and email required
- */
-export function AccessibleForm({ onSubmit }) {
-  // TODO: Implement accessible form
-  // Focus on ARIA attributes and proper HTML structure
-}
-
-/**
- * Create a form with keyboard navigation support.
- * Enhanced keyboard interaction.
- *
- * Requirements:
- * - Standard tab navigation works
- * - Enter key submits form (from any input)
- * - Escape key clears form
- * - Keyboard shortcut: Ctrl/Cmd + S saves draft
- * - Show keyboard shortcuts hint (data-testid="shortcuts-hint")
- * - Inputs: title, description
- * - Save draft to localStorage
- *
- * Prevent default behavior for shortcuts
- */
-export function KeyboardNavigationForm({ onSubmit }) {
-  // TODO: Implement keyboard navigation
-  // Hint: Use onKeyDown handlers, check key codes
-}
-
-/**
- * Create a form with live validation announcements.
- * Screen reader announces validation status.
- *
- * Requirements:
- * - Email and password inputs
- * - Live region for announcements (aria-live="polite")
- * - Announce validation errors to screen readers
- * - Announce successful validation
- * - Visual error messages below fields
- * - Live region has data-testid="live-region"
- *
- * Announcements:
- * - "Email is invalid" / "Email is valid"
- * - "Password is too short" / "Password is valid"
- */
-export function LiveValidationForm({ onSubmit }) {
-  // TODO: Implement live validation announcements
-  // Hint: Use aria-live region that updates with validation messages
-}
-
-/**
- * Create a form with focus trap for modal.
- * Trap focus within form while modal is open.
- *
- * Requirements:
- * - Modal overlay with form
- * - isOpen prop controls visibility
- * - Focus trapped within modal when open
- * - Focus first input on modal open
- * - Tab cycles through form elements only
- * - Shift+Tab cycles backward
- * - Escape closes modal
- * - Return focus to trigger element on close
- * - Close button and submit button
- *
- * Modal should have role="dialog" and aria-modal="true"
- */
-export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
-  // TODO: Implement focus trap
-  // Hint: Use refs to track focusable elements, manage focus on tab
 }
 
 // =============================================================================

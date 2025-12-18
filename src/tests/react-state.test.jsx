@@ -625,7 +625,7 @@ describe('Exercise 6: useReducer for Complex State', () => {
 // =============================================================================
 
 describe('Exercise 7: State Normalization Techniques', () => {
-  describe('BlogManager Component', () => {
+  describe.only('BlogManager Component', () => {
     test('should manage normalized data structure', () => {
       render(<BlogManager />);
 
