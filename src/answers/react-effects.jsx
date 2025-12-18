@@ -17,7 +17,7 @@
  * - Test cases to validate implementation
  */
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 
 // =============================================================================
 // EXERCISE 1: useEffect Hook Patterns

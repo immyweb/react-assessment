@@ -12,7 +12,7 @@
  * Instructions: Replace all TODO comments with your implementations.
  */
 
-import React, {
+import {
   useState,
   useMemo,
   useCallback,
