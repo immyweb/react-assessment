@@ -58,7 +58,7 @@ export default defineConfig({
     },
 
     // Timeouts
-    testTimeout: 10000,
+    testTimeout: 2500,
     hookTimeout: 10000,
 
     // Reporter configuration

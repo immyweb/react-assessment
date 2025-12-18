@@ -552,8 +552,43 @@ export function TouchedValidationForm({ onSubmit }) {
  * States: idle, checking, available, taken
  */
 export function AsyncValidationForm({ onSubmit }) {
-  // TODO: Implement async validation
-  // Hint: Use setTimeout to simulate API call, useEffect for cleanup
+  const [status, setStatus] = useState('idle');
+
+  function checkAvailability(value) {
+    return new Promise(() => {
+      setStatus('checking');
+      setTimeout(() => {
+        if (value === 'admin' || value === 'user' || value === 'test') {
+          setStatus('taken');
+        } else {
+          setStatus('available');
+        }
+      }, 500);
+    });
+  }
+
+  function handleSubmit(formData) {
+    const data = Object.fromEntries(formData);
+    onSubmit(data);
+  }
+
+  return (
+    <form role="form" action={handleSubmit}>
+      <label htmlFor="username">Username</label>
+      <input
+        id="username"
+        name="username"
+        onBlur={(e) => checkAvailability(e.target.value)}
+      />
+      <span data-testid="validation-status">{status}</span>
+
+      <button
+        type="submit"
+        disabled={status === 'checking' || status === 'taken'}>
+        Submit
+      </button>
+    </form>
+  );
 }
 
 // =============================================================================
@@ -717,8 +752,63 @@ export function AccessibleForm({ onSubmit }) {
  * Prevent default behavior for shortcuts
  */
 export function KeyboardNavigationForm({ onSubmit }) {
-  // TODO: Implement keyboard navigation
-  // Hint: Use onKeyDown handlers, check key codes
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+
+  function handleKeyDown(evt) {
+    if (evt.key === 'Enter') {
+      evt.preventDefault();
+      onSubmit({
+        title,
+        description
+      });
+    }
+
+    if (evt.key === 'Escape') {
+      setTitle('');
+      setDescription('');
+    }
+
+    if (evt.key === 's' && evt.ctrlKey === true) {
+      evt.preventDefault();
+      localStorage.setItem(
+        'form-draft',
+        JSON.stringify({ title, description })
+      );
+    }
+  }
+
+  return (
+    <form role="form">
+      <label htmlFor="title">Title</label>
+      <input
+        id="title"
+        name="title"
+        value={title}
+        aria-required="true"
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => handleKeyDown(e)}
+      />
+
+      <label htmlFor="description">Description</label>
+      <input
+        id="description"
+        name="description"
+        value={description}
+        aria-required="true"
+        onChange={(e) => setDescription(e.target.value)}
+        onKeyDown={(e) => handleKeyDown(e)}
+      />
+
+      <button type="submit">Submit</button>
+
+      <ul data-testid="shortcuts-hint">
+        <li>Enter key submits form (from any input)</li>
+        <li>Escape key clears form</li>
+        <li>Keyboard shortcut: Ctrl/Cmd + S saves draft</li>
+      </ul>
+    </form>
+  );
 }
 
 /**
@@ -738,8 +828,47 @@ export function KeyboardNavigationForm({ onSubmit }) {
  * - "Password is too short" / "Password is valid"
  */
 export function LiveValidationForm({ onSubmit }) {
-  // TODO: Implement live validation announcements
-  // Hint: Use aria-live region that updates with validation messages
+  const [emailValid, setEmailValid] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
+
+  function validateEmail(value) {
+    setEmailValid(isValidEmail(value));
+  }
+
+  function validatePassword(value) {
+    const errors = validatePassword(value);
+    errors.length > 0 ? setPasswordValid(false) : setPasswordValid(true);
+  }
+
+  function handleSubmit(formData) {
+    const data = Object.fromEntries(formData);
+    onSubmit(data);
+  }
+
+  return (
+    <form role="form" action={handleSubmit}>
+      <label htmlFor="email">Email</label>
+      <input
+        id="email"
+        name="email"
+        onBlur={(e) => validateEmail(e.target.value)}
+      />
+
+      <label htmlFor="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        onBlur={(e) => validatePassword(e.target.value)}
+      />
+
+      <div role="region" aria-live="polite" data-testid="live-region">
+        {emailValid ? 'Email is valid' : 'Email is invalid'}
+        {passwordValid ? 'Password is valid' : 'Password is too short'}
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  );
 }
 
 /**
@@ -760,8 +889,74 @@ export function LiveValidationForm({ onSubmit }) {
  * Modal should have role="dialog" and aria-modal="true"
  */
 export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
-  // TODO: Implement focus trap
-  // Hint: Use refs to track focusable elements, manage focus on tab
+  const modalRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Save the currently focused element
+      triggerRef.current = document.activeElement;
+
+      const modalElement = modalRef.current;
+      const focusableElements = modalElement.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      // Restore focus to the trigger element
+      firstElement.focus();
+
+      function handleTabKeyPress(event) {
+        if (event.key === 'Tab') {
+          if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          } else if (
+            !event.shiftKey &&
+            document.activeElement === lastElement
+          ) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+
+      function handleEscapeKeyPress(event) {
+        if (event.key === 'Escape') {
+          onClose();
+        }
+      }
+
+      modalElement.addEventListener('keydown', handleTabKeyPress);
+      modalElement.addEventListener('keydown', handleEscapeKeyPress);
+
+      return () => {
+        modalElement.removeEventListener('keydown', handleTabKeyPress);
+        modalElement.removeEventListener('keydown', handleEscapeKeyPress);
+
+        // Restore focus to the trigger element
+        triggerRef.current?.focus();
+      };
+    }
+  }, [isOpen]);
+
+  return isOpen ? (
+    <div ref={modalRef} role="dialog" aria-modal="true">
+      <form role="form">
+        <label htmlFor="name">Name</label>
+        <input id="name" name="name" />
+
+        <button type="submit" onClick={onSubmit}>
+          Submit
+        </button>
+
+        <button onClick={onClose}>Close</button>
+      </form>
+    </div>
+  ) : (
+    <></>
+  );
 }
 
 // =============================================================================

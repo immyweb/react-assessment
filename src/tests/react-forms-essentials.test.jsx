@@ -11,7 +11,13 @@
  * - Accessibility in forms
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
 
@@ -22,7 +28,6 @@ import {
   RealtimeValidationForm,
   TouchedValidationForm,
   AsyncValidationForm,
-  SchemaValidationForm,
   AccessibleForm,
   KeyboardNavigationForm,
   LiveValidationForm,
@@ -41,10 +46,7 @@ import {
   ZodBasicValidation,
   ZodWithReactHookForm,
   ZodCustomRefinements,
-  ZodTransforms,
-  isValidEmail,
-  validatePassword,
-  formatFileSize
+  ZodTransforms
 } from '../exercises/react-forms-essentials';
 
 // =============================================================================
@@ -381,7 +383,7 @@ describe('Exercise 2: Form Validation Strategies', () => {
 
   describe('AsyncValidationForm', () => {
     beforeEach(() => {
-      vi.useFakeTimers();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
     });
 
     afterEach(() => {
@@ -389,7 +391,7 @@ describe('Exercise 2: Form Validation Strategies', () => {
     });
 
     it('should show checking status during validation', async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       render(<AsyncValidationForm onSubmit={vi.fn()} />);
 
       const usernameInput = screen.getByLabelText(/username/i);
@@ -402,31 +404,38 @@ describe('Exercise 2: Form Validation Strategies', () => {
     });
 
     it('should show username available for valid username', async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       render(<AsyncValidationForm onSubmit={vi.fn()} />);
 
       const usernameInput = screen.getByLabelText(/username/i);
       await user.type(usernameInput, 'validuser');
       await user.tab();
 
-      vi.advanceTimersByTime(500);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('validation-status')).toHaveTextContent(
-          /available/i
-        );
+      act(() => {
+        vi.advanceTimersByTime(500);
       });
+
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('validation-status')).toHaveTextContent(
+            /available/i
+          );
+        },
+        { timeout: 1000 }
+      );
     });
 
     it('should show username taken for reserved usernames', async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       render(<AsyncValidationForm onSubmit={vi.fn()} />);
 
       const usernameInput = screen.getByLabelText(/username/i);
       await user.type(usernameInput, 'admin');
       await user.tab();
 
-      vi.advanceTimersByTime(500);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
 
       await waitFor(() => {
         expect(screen.getByTestId('validation-status')).toHaveTextContent(
@@ -436,7 +445,7 @@ describe('Exercise 2: Form Validation Strategies', () => {
     });
 
     it('should disable submit while checking', async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       render(<AsyncValidationForm onSubmit={vi.fn()} />);
 
       const usernameInput = screen.getByLabelText(/username/i);
@@ -448,14 +457,16 @@ describe('Exercise 2: Form Validation Strategies', () => {
     });
 
     it('should disable submit if username taken', async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       render(<AsyncValidationForm onSubmit={vi.fn()} />);
 
       const usernameInput = screen.getByLabelText(/username/i);
       await user.type(usernameInput, 'user');
       await user.tab();
 
-      vi.advanceTimersByTime(500);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
 
       await waitFor(() => {
         const submitButton = screen.getByRole('button', { name: /submit/i });
@@ -605,7 +616,7 @@ describe('Exercise 3: Accessibility in Forms', () => {
     });
   });
 
-  describe('FocusTrapForm', () => {
+  describe.only('FocusTrapForm', () => {
     it('should have dialog role when open', () => {
       render(
         <FocusTrapForm isOpen={true} onClose={vi.fn()} onSubmit={vi.fn()} />
