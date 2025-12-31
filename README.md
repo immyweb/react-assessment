@@ -1,11 +1,6 @@
 # Test Driven React Assessment
 
 A set of tasks to assesses the skills of a candidate for a React position, or to evaluate and improve one's own skills.
-Fundamental concept demonstrations for learning/assessment of React.
-Simple exercises that clearly isolate each concept.
-
-1. Clear documentation blocks with examples and expected outputs
-2. Graduated difficulty from basic concepts to advanced patterns
 
 ## Topics covered
 
@@ -127,7 +122,26 @@ Simple exercises that clearly isolate each concept.
 - Redux - state management ✅
 - Zustand - state management ✅
 
-### 14. Testing Patterns (react-testing.js)
+### 14. Security Practices (react-security.jsx)
+
+- XSS prevention techniques ❌
+- dangerouslySetInnerHTML safe usage patterns ❌
+- CSRF protection in forms ❌
+- Sanitization strategies ❌
+- Secure file upload handling ❌
+- SQL injection prevention (client-side) ❌
+- Secure local storage practices ❌
+
+### 15. Typescript Integration
+
+- Advanced TypeScript patterns with React ❌
+- Generic components ❌
+- Proper typing of refs, forwardRef, and useImperativeHandle ❌
+- Event handler typing ❌
+- React.ReactNode vs React.ReactElement vs PropsWithChildren ❌
+- Discriminated unions with props ❌
+
+### 16. Testing Patterns (react-testing.js)
 
 - Component testing strategies
 - Hook testing patterns
