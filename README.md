@@ -132,14 +132,18 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - SQL injection prevention (client-side) ❌
 - Secure local storage practices ❌
 
-### 15. Typescript Integration
+### 15. TypeScript Integration (react-typescript.tsx)
 
 - Advanced TypeScript patterns with React ❌
 - Generic components ❌
 - Proper typing of refs, forwardRef, and useImperativeHandle ❌
 - Event handler typing ❌
-- React.ReactNode vs React.ReactElement vs PropsWithChildren ❌
+- React.ReactNode vs React.ReactElement vs PropsWithChildren ❌
 - Discriminated unions with props ❌
+- Polymorphic components (as prop pattern) ❌
+- Generic hooks ❌
+- Type guards and narrowing ❌
+- Utility types (Pick, Omit, Partial, Required) ❌
 
 ### 16. Testing Patterns (react-testing.js)
 
