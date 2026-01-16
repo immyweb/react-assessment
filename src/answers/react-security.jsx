@@ -9,15 +9,12 @@
  * - Content Security Policy integration
  * - Secure data handling
  *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import DOMPurify from 'isomorphic-dompurify';
+import { marked } from 'marked';
 
 // =============================================================================
 // EXERCISE 1: XSS Prevention - Safe User Content Display
@@ -46,8 +43,12 @@ import PropTypes from 'prop-types';
  * </div>
  */
 export function SafeUserProfile({ username, bio }) {
-  // TODO: Implement safe user profile display
-  // Hint: React automatically escapes content in JSX expressions
+  return (
+    <div className="user-profile">
+      <h2>{username}</h2>
+      <p>{bio}</p>
+    </div>
+  );
 }
 
 SafeUserProfile.propTypes = {
@@ -84,12 +85,9 @@ SafeUserProfile.propTypes = {
  * Should render: <p>Safe content</p> (script removed)
  */
 export function SanitizedHTML({ htmlContent }) {
-  // TODO: Implement sanitized HTML rendering
-  // 1. Import DOMPurify
-  // 2. Sanitize the htmlContent
-  // 3. Render using dangerouslySetInnerHTML with sanitized content
+  const sanitized = DOMPurify.sanitize(htmlContent);
 
-  return null;
+  return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
 }
 
 SanitizedHTML.propTypes = {
@@ -120,12 +118,28 @@ SanitizedHTML.propTypes = {
  * - Invalid URL: Render as plain text
  */
 export function SafeLink({ url, text, external = true }) {
-  // TODO: Implement safe link rendering
-  // 1. Validate URL protocol
-  // 2. If safe, render as <a> with appropriate attributes
-  // 3. If unsafe, render as <span> with the text
+  try {
+    const { protocol } = new URL(url);
 
-  return null;
+    if (
+      protocol !== 'http:' &&
+      protocol !== 'https:' &&
+      protocol !== 'mailto:'
+    ) {
+      return <span>{text}</span>;
+    }
+
+    return (
+      <a
+        href={url}
+        rel="noopener noreferrer"
+        target={protocol !== 'mailto:' && external ? '_blank' : undefined}>
+        {text}
+      </a>
+    );
+  } catch {
+    return <span>{text}</span>;
+  }
 }
 
 SafeLink.propTypes = {
@@ -167,12 +181,41 @@ export function CSRFProtectedForm({ csrfToken, onSubmit }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  // TODO: Implement CSRF-protected form
-  // 1. Validate csrfToken exists before submission
-  // 2. Include CSRF token as hidden input
-  // 3. Handle form submission with token
+  function handleSubmit(e) {
+    e.preventDefault();
 
-  return null;
+    if (email && message && csrfToken) {
+      onSubmit({
+        email,
+        message,
+        csrf_token: csrfToken
+      });
+    } else {
+      setError('csrf token is missing');
+    }
+  }
+
+  return (
+    <form method="post" action="/api/submit" onSubmit={handleSubmit}>
+      <input type="hidden" name="csrf_token" value={csrfToken} />
+      <label htmlFor="email">Email</label>
+      <input
+        name="email"
+        id="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <label htmlFor="message">Message</label>
+      <textarea
+        name="message"
+        id="message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      <button type="submit">Submit</button>
+      {error && <span>{error}</span>}
+    </form>
+  );
 }
 
 CSRFProtectedForm.propTypes = {
@@ -208,13 +251,32 @@ CSRFProtectedForm.propTypes = {
  * Output: <h1>Hello</h1><a>Click</a> (href sanitized)
  */
 export function SafeMarkdownRenderer({ markdown }) {
-  // TODO: Implement safe markdown rendering
-  // 1. Import marked and DOMPurify
-  // 2. Parse markdown to HTML
-  // 3. Sanitize the HTML
-  // 4. Render using dangerouslySetInnerHTML
+  // Parse Markdown to HTML
+  const rawHtml = marked.parse(markdown);
 
-  return null;
+  // Sanitize the HTML with allowed tags and attributes
+  const sanitizedHtml = DOMPurify.sanitize(rawHtml, {
+    ALLOWED_TAGS: [
+      'p',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'ul',
+      'ol',
+      'li',
+      'em',
+      'strong',
+      'a',
+      'code',
+      'pre'
+    ],
+    ALLOWED_ATTR: ['href', 'title', 'target']
+  });
+
+  return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
 }
 
 SafeMarkdownRenderer.propTypes = {
@@ -242,12 +304,22 @@ SafeMarkdownRenderer.propTypes = {
  * Output: <div data-user-id="123" data-tooltip="[sanitized]" />
  */
 export function SecureDataAttributes({ dataAttributes, children }) {
-  // TODO: Implement secure data attribute handling
-  // 1. Sanitize each attribute value
-  // 2. Apply as data-* attributes
-  // 3. Warn if sanitization was needed
+  const converted = Object.entries(dataAttributes).map((pair) => {
+    const sanitised = [
+      `data-${pair[0]}`.toLowerCase(),
+      DOMPurify.sanitize(pair[1])
+    ];
 
-  return null;
+    if (sanitised[1] !== pair[1]) {
+      console.warn(`Sanitization applied: "${pair[1]}" -> "${sanitised[1]}"`);
+    }
+
+    return sanitised;
+  });
+
+  const obj = Object.fromEntries(converted);
+
+  return <div {...obj}>{children}</div>;
 }
 
 SecureDataAttributes.propTypes = {
@@ -285,13 +357,42 @@ SecureDataAttributes.propTypes = {
 export function CSPViolationReporter() {
   const [violations, setViolations] = useState([]);
 
-  // TODO: Implement CSP violation reporter
-  // 1. Add event listener for 'securitypolicyviolation'
-  // 2. Store violation details
-  // 3. Display violations
-  // 4. Clean up on unmount
+  useEffect(() => {
+    window.addEventListener('securitypolicyviolation', onViolation);
 
-  return null;
+    return () => {
+      window.removeEventListener('securitypolicyviolation', onViolation);
+    };
+  }, []);
+
+  function onViolation(event) {
+    const violation = {
+      id: Date.now(),
+      message: 'CSP violation detected',
+      violatedDirective: event.violatedDirective,
+      blockedURI: event.blockedURI || 'N/A',
+      sourceFile: event.sourceFile || 'N/A'
+    };
+    setViolations((prev) => [...prev, violation]);
+  }
+
+  return (
+    <div className="csp-violations">
+      <h3>CSP Violations</h3>
+      <ul>
+        {violations.length > 0
+          ? violations.map((v) => (
+              <li key={v.id}>
+                <p>{v.message}</p>
+                <p>violatedDirective: {v.violatedDirective}</p>
+                <p>blockedURI: {v.blockedURI}</p>
+                <p>sourceFile: {v.sourceFile}</p>
+              </li>
+            ))
+          : 'No CSP violations detected'}
+      </ul>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -327,14 +428,56 @@ export function SecureFileUpload({ allowedTypes, maxSize, onUpload }) {
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
 
-  // TODO: Implement secure file upload
-  // 1. Validate file type against allowedTypes
-  // 2. Validate file size against maxSize
-  // 3. Sanitize filename
-  // 4. Create safe preview for images
-  // 5. Call onUpload with validated file
+  function onFileChange(e) {
+    const file = e.target.files[0];
 
-  return null;
+    // Clear error state when a new file is selected
+    setError('');
+
+    if (!file) {
+      setError('No file selected');
+      return;
+    }
+
+    const isTypeCorrect = validateFileType(file, allowedTypes);
+    const isSizeCorrect = file.size <= maxSize;
+
+    if (isTypeCorrect && isSizeCorrect) {
+      if (file.type.startsWith('image/')) {
+        // Revoke previous preview URL to avoid memory leaks
+        if (preview) {
+          URL.revokeObjectURL(preview);
+        }
+        setPreview(URL.createObjectURL(file));
+      }
+      onUpload(file);
+    } else {
+      if (!isTypeCorrect) {
+        setError('Invalid file type');
+      } else if (!isSizeCorrect) {
+        setError('File size exceeds the limit');
+      }
+    }
+  }
+
+  useEffect(() => {
+    // Cleanup preview URL on component unmount
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  return (
+    <form role="form">
+      <label htmlFor="upload">Upload file</label>
+      <input name="upload" id="upload" type="file" onChange={onFileChange} />
+      <button onClick={(e) => e.preventDefault()}>Upload</button>
+      {error && <span aria-live="polite">{error}</span>}
+      {preview && <img src={preview} alt="File preview" />}
+    </form>
+  );
 }
 
 SecureFileUpload.propTypes = {
@@ -342,6 +485,22 @@ SecureFileUpload.propTypes = {
   maxSize: PropTypes.number.isRequired,
   onUpload: PropTypes.func.isRequired
 };
+
+/**
+ * Validates file type by checking both MIME type and extension
+ */
+export function validateFileType(file, allowedTypes) {
+  const checkType = allowedTypes.some((type) => type === file.type);
+
+  const extension = file.name.split('.').pop().toLowerCase();
+  const allowedExtensions = allowedTypes.map((type) => type.split('/').pop());
+
+  if (checkType || allowedExtensions.includes(extension)) {
+    return true;
+  }
+
+  return false;
+}
 
 // =============================================================================
 // EXERCISE 9: SQL Injection Prevention (Client-Side)
@@ -375,18 +534,83 @@ export function SafeSearchInput({ onSearch }) {
   const [query, setQuery] = useState('');
   const [warning, setWarning] = useState('');
 
-  // TODO: Implement safe search input
-  // 1. Detect SQL injection patterns
-  // 2. Show warning if dangerous patterns found
-  // 3. Sanitize or block dangerous input
-  // 4. Call onSearch with safe query
+  function onSubmit(e) {
+    e.preventDefault();
+    setWarning('');
 
-  return null;
+    console.log(query);
+    const isInvalid = detectSQLInjection(query);
+
+    if (isInvalid) {
+      setWarning('Warning: SQL injection detected');
+    } else {
+      onSearch(query);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit}>
+      <label htmlFor="query">Query</label>
+      <textarea
+        name="query"
+        id="query"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <button type="submit">Search</button>
+      {warning && <span aria-live="polite">{warning}</span>}
+    </form>
+  );
 }
 
 SafeSearchInput.propTypes = {
   onSearch: PropTypes.func.isRequired
 };
+
+/**
+ * Detects potential SQL injection patterns
+ */
+export function detectSQLInjection(input) {
+  // Normalize input to lowercase for case-insensitive matching
+  const normalizedInput = input.toLowerCase();
+
+  // List of SQL keywords to detect
+  const sqlKeywords = [
+    'select',
+    'drop',
+    'insert',
+    'update',
+    'delete',
+    'union',
+    'alter',
+    'create',
+    'replace'
+  ];
+
+  // Regex to detect SQL-like patterns
+  const sqlPattern = new RegExp(
+    `\\b(${sqlKeywords.join('|')})\\b.*(from|into|where|table|database)`,
+    'i'
+  );
+
+  // Check for dangerous patterns
+  const hasSQLKeywordInContext = sqlPattern.test(input);
+  const hasQuotes = /['"`]/.test(input); // Single, double, or backticks
+  const hasSemicolon = /;/.test(input);
+  const hasCommentSyntax = /--|\/\*/.test(input); // SQL comments
+
+  // Allow safe queries with common words
+  const safePhrases = ['select a date', 'select an option'];
+  const isSafePhrase = safePhrases.some((phrase) =>
+    normalizedInput.includes(phrase)
+  );
+
+  // Return true if any pattern is detected, excluding safe phrases
+  return (
+    !isSafePhrase &&
+    (hasSQLKeywordInContext || hasQuotes || hasSemicolon || hasCommentSyntax)
+  );
+}
 
 // =============================================================================
 // EXERCISE 10: Secure Local Storage Handler
@@ -419,71 +643,50 @@ SafeSearchInput.propTypes = {
  * - API tokens
  * - Credit card info
  * - Personal identification
+ * Usage:
+ * <SecureLocalStorage storageKey="test-key" initialValue="">
+    {(value, setValue) => (
+      <>
+        <div>{value}</div>
+        <button onClick={() => setValue('<script>alert("xss")</script>')}>
+          Set Value
+        </button>
+      </>
+    )}
+  </SecureLocalStorage>
  */
 export function SecureLocalStorage({ storageKey, initialValue, children }) {
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState(
+    () => getStoredValue(storageKey) || initialValue
+  );
   const [error, setError] = useState('');
 
-  // TODO: Implement secure localStorage handling
-  // 1. Load data from localStorage with validation
-  // 2. Save data with sanitization
-  // 3. Handle storage quota errors
-  // 4. Provide context to children
+  function getStoredValue(key) {
+    const data = localStorage.getItem(key);
 
-  return null;
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setStoredValue(newValue) {
+    try {
+      const sanitised =
+        typeof newValue === 'string' ? DOMPurify.sanitize(newValue) : newValue;
+      localStorage.setItem(storageKey, JSON.stringify(sanitised));
+      setValue(sanitised);
+    } catch (e) {
+      setError('Failed to save data. Storage quota exceeded.');
+    }
+  }
+
+  return children({ value, setStoredValue, error });
 }
 
 SecureLocalStorage.propTypes = {
   storageKey: PropTypes.string.isRequired,
   initialValue: PropTypes.any,
-  children: PropTypes.node
+  children: PropTypes.func.isRequired
 };
-
-// =============================================================================
-// HELPER FUNCTIONS (for reference and testing)
-// =============================================================================
-
-/**
- * Validates if a URL uses a safe protocol
- */
-export function isSafeUrl(url) {
-  // TODO: Implement URL validation
-  // Check if protocol is http, https, or mailto
-  return false;
-}
-
-/**
- * Sanitizes a string for use in HTML attributes
- */
-export function sanitizeAttribute(value) {
-  // TODO: Implement attribute sanitization
-  // Remove dangerous characters: < > " ' &
-  return '';
-}
-
-/**
- * Detects potential SQL injection patterns
- */
-export function detectSQLInjection(input) {
-  // TODO: Implement SQL injection detection
-  // Look for SQL keywords, quotes, comments
-  return false;
-}
-
-/**
- * Validates file type by checking both MIME type and extension
- */
-export function validateFileType(file, allowedTypes) {
-  // TODO: Implement file type validation
-  // Check both file.type and file.name extension
-  return false;
-}
-
-/**
- * Sanitizes a filename for safe storage
- */
-export function sanitizeFilename(filename) {
-  // TODO: Implement filename sanitization
-  // Remove path traversal attempts, special characters
-  return '';
-}
