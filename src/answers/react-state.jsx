@@ -17,7 +17,7 @@
  * - Test cases to validate implementation
  */
 
-import React, { useState, useReducer } from 'react';
+import { useState, useReducer } from 'react';
 
 // =============================================================================
 // EXERCISE 1: useState Hook Fundamentals
@@ -620,25 +620,157 @@ export function ShoppingCart() {
  * - Should provide efficient data access patterns
  * - Should handle adding/removing data without deep mutations
  */
-export function BlogManager() {
-  // TODO: Define normalized data structure
-  // TODO: Implement data management functions
-  // TODO: Implement this component
+
+const ADD_USER = 'ADD_USER';
+const ADD_POST = 'ADD_POST';
+const ADD_COMMENT = 'ADD_COMMENT';
+const REMOVE_POST = 'REMOVE_POST';
+const REMOVE_COMMENT = 'REMOVE_COMMENT';
+
+const initialState = {
+  users: {},
+  posts: {},
+  comments: {}
+};
+
+function blogReducer(state, action) {
+  switch (action.type) {
+    case ADD_USER:
+      return {
+        ...state,
+        users: {
+          ...state.users,
+          [action.payload.id]: action.payload
+        }
+      };
+
+    case ADD_POST:
+      return {
+        ...state,
+        posts: {
+          ...state.posts,
+          [action.payload.id]: action.payload
+        }
+      };
+
+    case ADD_COMMENT:
+      return {
+        ...state,
+        comments: {
+          ...state.comments,
+          [action.payload.id]: action.payload
+        }
+      };
+
+    case REMOVE_POST:
+      const { [action.payload]: removedPost, ...remainingPosts } = state.posts;
+      return {
+        ...state,
+        posts: remainingPosts,
+        comments: Object.fromEntries(
+          Object.entries(state.comments).filter(
+            ([_, comment]) => comment.postId !== action.payload
+          )
+        )
+      };
+
+    case REMOVE_COMMENT:
+      const { [action.payload]: removedComment, ...remainingComments } =
+        state.comments;
+      return {
+        ...state,
+        comments: remainingComments
+      };
+
+    default:
+      return state;
+  }
 }
 
-/**
- * Create a component that demonstrates efficient data derivation from normalized state.
- * Should compute derived data efficiently
- * Should demonstrate selector patterns for data access
- * Should show memoization for expensive computations
- *
- * Expected behavior:
- * - Should calculate statistics from normalized data
- * - Should use memoization to avoid unnecessary recalculations
- * - Should demonstrate efficient data filtering and sorting
- */
-export function DataSelectors() {
-  // TODO: Implement selector functions
-  // TODO: Implement memoized computations
-  // TODO: Implement this component
+export function BlogManager() {
+  const [state, dispatch] = useReducer(blogReducer, initialState);
+
+  // Handlers
+  const addUser = (name) => {
+    const id = `user-${Date.now()}`;
+    dispatch({ type: ADD_USER, payload: { id, name } });
+  };
+
+  const addPost = (userId, title, content) => {
+    const id = `post-${Date.now()}`;
+    dispatch({ type: ADD_POST, payload: { id, userId, title, content } });
+  };
+
+  const addComment = (postId, text) => {
+    const id = `comment-${Date.now()}`;
+    dispatch({ type: ADD_COMMENT, payload: { id, postId, text } });
+  };
+
+  const removePost = (postId) => {
+    dispatch({ type: REMOVE_POST, payload: postId });
+  };
+
+  const removeComment = (commentId) => {
+    dispatch({ type: REMOVE_COMMENT, payload: commentId });
+  };
+
+  return (
+    <div data-testid="blog-manager">
+      <h1>Blog Manager</h1>
+
+      {/* Add User */}
+      <button onClick={() => addUser('John Doe')}>Add User</button>
+
+      {/* Add Post */}
+      <button
+        onClick={() =>
+          addPost('user-1', 'My First Post', 'This is the content of the post.')
+        }>
+        Add Post
+      </button>
+
+      {/* Add Comment */}
+      <button onClick={() => addComment('post-1', 'Great post!')}>
+        Add Comment
+      </button>
+
+      <div data-testid="data-display">
+        {/* Display Users */}
+        <h2>Users</h2>
+        <ul>
+          {Object.values(state.users).map((user) => (
+            <li key={user.id}>{user.name}</li>
+          ))}
+        </ul>
+
+        {/* Display Posts */}
+        <h2>Posts</h2>
+        <ul data-testid="relationships">
+          {Object.values(state.posts).map((post) => (
+            <li key={post.id}>
+              <h3>{post.title}</h3>
+              <p>{post.content}</p>
+              <p>Author: {state.users[post.userId]?.name}</p>
+              <button onClick={() => removePost(post.id)}>Remove Post</button>
+
+              {/* Display Comments */}
+              <h4>Comments</h4>
+              <ul>
+                {Object.values(state.comments)
+                  .filter((comment) => comment.postId === post.id)
+                  .map((comment) => (
+                    <li key={comment.id}>
+                      {comment.text}
+                      <button onClick={() => removeComment(comment.id)}>
+                        Remove Comment
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 }

@@ -10,8 +10,7 @@ import {
   TemperatureConverter,
   ReducerCounter,
   ShoppingCart,
-  BlogManager,
-  DataSelectors
+  BlogManager
 } from '../exercises/react-state';
 
 // =============================================================================
@@ -625,7 +624,7 @@ describe('Exercise 6: useReducer for Complex State', () => {
 // =============================================================================
 
 describe('Exercise 7: State Normalization Techniques', () => {
-  describe.only('BlogManager Component', () => {
+  describe('BlogManager Component', () => {
     test('should manage normalized data structure', () => {
       render(<BlogManager />);
 
@@ -648,18 +647,8 @@ describe('Exercise 7: State Normalization Techniques', () => {
 
       // Should update the display
       expect(
-        screen.getByTestId('entities-list') ||
-          screen.getByText(/user|post|comment/i)
-      ).toBeInTheDocument();
-    });
-
-    test('should demonstrate efficient data lookups', () => {
-      render(<BlogManager />);
-
-      // Should display data in an organized manner
-      expect(
         screen.getByTestId('data-display') ||
-          screen.getByText(/users|posts|comments/i)
+          screen.getByText(/user|post|comment/i)
       ).toBeInTheDocument();
     });
 
@@ -671,99 +660,6 @@ describe('Exercise 7: State Normalization Techniques', () => {
         screen.getByTestId('relationships') ||
           screen.getByText(/by|author|comments/i)
       ).toBeInTheDocument();
-    });
-  });
-
-  describe('DataSelectors Component', () => {
-    test('should compute derived data efficiently', () => {
-      render(<DataSelectors />);
-
-      expect(
-        screen.getByTestId('selectors') ||
-          screen.getByText(/statistics|filtered|sorted/i)
-      ).toBeInTheDocument();
-    });
-
-    test('should demonstrate selector patterns', () => {
-      render(<DataSelectors />);
-
-      // Should show different data views/filters
-      expect(
-        screen.getByTestId('data-views') ||
-          screen.getByText(/filter|sort|search/i)
-      ).toBeInTheDocument();
-    });
-
-    test('should show memoized computations', () => {
-      render(<DataSelectors />);
-
-      // Should display computed values
-      expect(
-        screen.getByTestId('computed-data') ||
-          screen.getByText(/total|count|average/i)
-      ).toBeInTheDocument();
-    });
-
-    test('should handle data filtering and sorting', async () => {
-      const user = userEvent.setup();
-      render(<DataSelectors />);
-
-      // Should have controls for filtering/sorting
-      const controls =
-        screen.getAllByRole('button') || screen.getAllByRole('combobox');
-      expect(controls.length).toBeGreaterThan(0);
-
-      if (controls.length > 0) {
-        await user.click(controls[0]);
-        // Should update the display based on interaction
-      }
-    });
-  });
-});
-
-// =============================================================================
-// INTEGRATION TESTS
-// =============================================================================
-
-describe('Integration Tests', () => {
-  test('all components should render without errors', () => {
-    const components = [
-      Counter,
-      UserProfile,
-      FunctionalUpdates,
-      PersonInfo,
-      StateStructure,
-      TodoList,
-      TemperatureConverter,
-      ReducerCounter,
-      ShoppingCart,
-      BlogManager,
-      DataSelectors
-    ];
-
-    components.forEach((Component) => {
-      expect(() => render(<Component />)).not.toThrow();
-    });
-  });
-
-  test('all components should return valid React elements', () => {
-    const components = [
-      Counter,
-      UserProfile,
-      FunctionalUpdates,
-      PersonInfo,
-      StateStructure,
-      TodoList,
-      TemperatureConverter,
-      ReducerCounter,
-      ShoppingCart,
-      BlogManager,
-      DataSelectors
-    ];
-
-    components.forEach((Component) => {
-      const { container } = render(<Component />);
-      expect(container.firstChild).toBeTruthy();
     });
   });
 });

@@ -22,7 +22,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Avoiding state mutations ✅
 - State lifting patterns ✅
 - useReducer for complex state ✅
-- State normalization techniques ❌
+- State normalization techniques ✅
 
 ### 3. Effects and Side Effects (react-effects.jsx)
 

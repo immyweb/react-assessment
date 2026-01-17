@@ -17,7 +17,7 @@
  * - Test cases to validate implementation
  */
 
-import React, { useState, useReducer } from 'react';
+import { useState, useReducer } from 'react';
 
 // =============================================================================
 // EXERCISE 1: useState Hook Fundamentals
@@ -217,22 +217,5 @@ export function ShoppingCart() {
 export function BlogManager() {
   // TODO: Define normalized data structure
   // TODO: Implement data management functions
-  // TODO: Implement this component
-}
-
-/**
- * Create a component that demonstrates efficient data derivation from normalized state.
- * Should compute derived data efficiently
- * Should demonstrate selector patterns for data access
- * Should show memoization for expensive computations
- *
- * Expected behavior:
- * - Should calculate statistics from normalized data
- * - Should use memoization to avoid unnecessary recalculations
- * - Should demonstrate efficient data filtering and sorting
- */
-export function DataSelectors() {
-  // TODO: Implement selector functions
-  // TODO: Implement memoized computations
   // TODO: Implement this component
 }
