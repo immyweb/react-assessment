@@ -18,6 +18,9 @@
  */
 
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 // =============================================================================
 // EXERCISE 1: useEffect Hook Patterns
@@ -471,7 +474,47 @@ export function SearchableList() {
  * - Handle connection failures gracefully
  */
 export function LiveChat({ roomId }) {
-  // TODO: Implement WebSocket subscription management
+  const [messages, setMessages] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const ws = new WebSocket(`wss://example.com/chat/${roomId}`);
+
+    ws.onopen = () => {
+      console.log('WebSocket connection established');
+    };
+
+    ws.onmessage = (event) => {
+      const newMessage = JSON.parse(event.data);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+    };
+
+    ws.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      setError('Connection error. Please try again later.');
+    };
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+
+    // Cleanup on unmount
+    return () => {
+      ws.close();
+    };
+  }, [roomId]);
+
+  return (
+    <div>
+      <h2>Live Chat</h2>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <ul>
+        {messages.map((msg, index) => (
+          <li key={index}>{msg.text}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 /**
@@ -488,6 +531,57 @@ export function LiveChat({ roomId }) {
  */
 export function MultiSubscriber() {
   // TODO: Implement multiple event subscriptions
+  const [eventData, setEventData] = useState({
+    mouse: { x: 0, y: 0 },
+    key: null,
+    scroll: 0
+  });
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      setEventData((prev) => ({
+        ...prev,
+        mouse: { x: event.clientX, y: event.clientY }
+      }));
+    };
+
+    const handleKeyDown = (event) => {
+      setEventData((prev) => ({
+        ...prev,
+        key: event.key
+      }));
+    };
+
+    const handleScroll = () => {
+      setEventData((prev) => ({
+        ...prev,
+        scroll: window.scrollY
+      }));
+    };
+
+    // Add event listeners
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScroll);
+
+    // Cleanup event listeners on unmount
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  return (
+    <div>
+      <h2>Multi Event Subscriber</h2>
+      <p>
+        Mouse Position: {`X: ${eventData.mouse.x}, Y: ${eventData.mouse.y}`}
+      </p>
+      <p>Last Key Pressed: {eventData.key || 'None'}</p>
+      <p>Scroll Position: {eventData.scroll}</p>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -506,7 +600,74 @@ export function MultiSubscriber() {
  * - Should handle component unmounting during async operations
  */
 export function StaleClosurePrevention() {
-  // TODO: Implement stale closure prevention
+  const [data, setData] = useState(null);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!query) return;
+
+    const controller = new AbortController(); // Create an AbortController instance
+    const signal = controller.signal;
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `https://api.example.com/data?q=${query}`,
+          { signal }
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const result = await response.json();
+        setData(result); // Update state with the fetched data
+      } catch (err) {
+        if (signal.aborted) {
+          console.log('Fetch aborted');
+        } else {
+          setError(err.message);
+        }
+      } finally {
+        if (!signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      controller.abort(); // Abort the fetch request on cleanup
+    };
+  }, [query]);
+
+  function submitQuery(e) {
+    e.preventDefault();
+
+    setQuery(e.target.value);
+  }
+
+  return (
+    <div>
+      <form onSubmit={submitQuery}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Enter query"
+        />
+        <button type="submit">Submit</button>
+      </form>
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+    </div>
+  );
 }
 
 /**
@@ -522,7 +683,34 @@ export function StaleClosurePrevention() {
  * - Should handle cache expiration
  */
 export function RequestDeduplication() {
-  // TODO: Implement request deduplication
+  const [query, setQuery] = useState('');
+
+  const { isFetching, isError, data, error } = useQuery({
+    queryKey: ['data', query],
+    queryFn: async () => {
+      const response = await fetch(`https://api.example.com/data?q=${query}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      return await response.json();
+    },
+    enabled: !!query // Only fetch when query is not empty
+  });
+
+  const handleButtonClick = () => {
+    if (query !== 'test') {
+      setQuery('test'); // Update query only if it changes
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleButtonClick}>Refresh</button>
+      {isFetching && <p>Loading...</p>}
+      {isError && <p style={{ color: 'red' }}>{error.message}</p>}
+      {data && <p>{data.data}</p>}
+    </div>
+  );
 }
 
 // =============================================================================
@@ -541,7 +729,35 @@ export function RequestDeduplication() {
  * - Should show performance improvements
  */
 export function ExpensiveEffect({ data, filters, settings }) {
-  // TODO: Implement effect optimization
+  // Memoize the filtered data to avoid unnecessary recalculations
+  const filteredData = useMemo(() => {
+    console.log('Filtering data...');
+    return data.filter((item) => {
+      // Example filter logic
+      return filters.every((filter) => filter(item));
+    });
+  }, [data, filters]);
+
+  // Memoize the expensive calculation result
+  const expensiveCalculation = useMemo(() => {
+    console.log('Performing expensive calculation...');
+    return filteredData.reduce((acc, item) => acc + item.value, 0);
+  }, [filteredData]);
+
+  useEffect(() => {
+    console.log(
+      'Effect triggered with expensive calculation:',
+      expensiveCalculation
+    );
+    // Perform any side effects based on the expensive calculation
+  }, [expensiveCalculation]);
+
+  return (
+    <div>
+      <h2>Expensive Effect Optimization</h2>
+      <p>Result of expensive calculation: {expensiveCalculation}</p>
+    </div>
+  );
 }
 
 /**
@@ -557,7 +773,66 @@ export function ExpensiveEffect({ data, filters, settings }) {
  * - Should handle empty search terms
  */
 export function DebouncedSearch() {
-  // TODO: Implement debounced search
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const controller = useRef(new AbortController());
+
+  const handleSearch = useDebouncedCallback(
+    async (query) => {
+      controller.current.abort();
+      controller.current = new AbortController();
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `https://api.example.com/data?q=${query}`,
+          {
+            signal: controller.current.signal
+          }
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch data');
+        }
+
+        const result = await response.json();
+        setData(result); // Update state with the fetched data
+      } catch (err) {
+        if (controller.current.signal.aborted) {
+          console.log('Fetch aborted');
+        } else {
+          setError(err.message);
+        }
+      } finally {
+        if (!controller.current.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    },
+    { wait: 500 }
+  );
+
+  return (
+    <form>
+      <label htmlFor="search">Search</label>
+      <input
+        id="search"
+        name="search"
+        tyoe="text"
+        onChange={(e) => handleSearch(e.target.value)}
+      />
+      {loading && <p>Loading...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {data.length > 0 && (
+        <ul>
+          {data.map((item, index) => (
+            <li key={index}>{item.name}</li>
+          ))}
+        </ul>
+      )}
+    </form>
+  );
 }
 
 /**
@@ -573,7 +848,41 @@ export function DebouncedSearch() {
  * - Should demonstrate flushSync when needed
  */
 export function BatchedEffects() {
-  // TODO: Implement effect batching
+  const [one, setOne] = useState('');
+  const [two, setTwo] = useState('');
+  const [three, setThree] = useState('');
+
+  // React batches state updates triggered by event handlers
+  // to minimize re-renders and improve performance.
+  function batch() {
+    setOne('1');
+    setTwo('2');
+    setThree('3');
+  }
+
+  // React's flushSync can be used to force React to process
+  // state updates immediately, breaking batching.
+  function manual() {
+    flushSync(() => {
+      setOne('1');
+      setTwo('2');
+      setThree('3');
+    });
+  }
+
+  console.log('render');
+
+  return (
+    <div>
+      <button onClick={batch}>Batch</button>
+      <button onClick={manual}>Manual</button>
+      <div>
+        <p>{one}</p>
+        <p>{two}</p>
+        <p>{three}</p>
+      </div>
+    </div>
+  );
 }
 
 // =============================================================================
@@ -595,12 +904,51 @@ export function BatchedEffects() {
  * - Should be composable with other hooks
  */
 export function useAsyncEffect(asyncFunction, dependencies) {
-  // TODO: Implement custom async effect hook
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: dependencies,
+    queryFn: async () => {
+      console.log('Executing asyncFunction...');
+      try {
+        const result = await asyncFunction();
+        console.log('asyncFunction resolved with:', result);
+        return result;
+      } catch (err) {
+        // console.error('Error in asyncFunction:', err);
+        throw err; // Ensure the error is propagated to useQuery
+      }
+    }
+  });
+
+  if (isError) {
+    console.error('useQuery encountered an error:', error);
+  }
+
+  return { data, isLoading, error, isError };
 }
 
 /**
  * Component demonstrating the custom hook usage
  */
 export function AsyncEffectDemo() {
-  // TODO: Implement async effect demo using custom hook
+  const fetchData = async () => {
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    if (!response.ok) {
+      throw new Error('Failed to fetch data');
+    }
+    return response.json();
+  };
+
+  const { data, isLoading, error } = useAsyncEffect(fetchData, ['fetchPosts']);
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  console.log(data);
+
+  return (
+    <div>
+      <h2>Async Effect Demo</h2>
+      <ul>{data.data}</ul>
+    </div>
+  );
 }

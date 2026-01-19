@@ -30,9 +30,9 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Effect dependencies and cleanup ✅
 - Effect timing (layout effects) ✅
 - Data fetching patterns ✅
-- Subscription management ❌
-- Race condition handling ❌
-- Effect optimization ❌
+- Subscription management ✅
+- Race condition handling ✅
+- Effect optimization ✅
 
 ### 4. Context and Global State (react-context.jsx)
 

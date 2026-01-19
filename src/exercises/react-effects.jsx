@@ -17,7 +17,10 @@
  * - Test cases to validate implementation
  */
 
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
+import { flushSync } from 'react-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 // =============================================================================
 // EXERCISE 1: useEffect Hook Patterns
@@ -291,7 +294,7 @@ export function RequestDeduplication() {
  * - Should use memoization to prevent unnecessary recalculations
  * - Should show performance improvements
  */
-export function ExpensiveEffect({ data, filters, settings }) {
+export function ExpensiveEffect({ data, filters }) {
   // TODO: Implement effect optimization
 }
 

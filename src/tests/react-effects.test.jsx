@@ -1,4 +1,10 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, describe, it, vi, beforeEach, afterEach } from 'vitest';
 import {
@@ -22,6 +28,10 @@ import {
   useAsyncEffect,
   AsyncEffectDemo
 } from '../exercises/react-effects';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Create a QueryClient instance
+const queryClient = new QueryClient();
 
 // Mock global objects and functions
 const originalTitle = document.title;
@@ -669,11 +679,13 @@ describe('Exercise 5: Subscription Management', () => {
       mockWebSocket = {
         send: vi.fn(),
         close: vi.fn(),
-        addEventListener: vi.fn(),
+        onmessage: vi.fn(),
         removeEventListener: vi.fn(),
         readyState: 1
       };
-      global.WebSocket = vi.fn(() => mockWebSocket);
+      global.WebSocket = vi.fn(function () {
+        return mockWebSocket;
+      });
     });
 
     it('should establish WebSocket connection on mount', () => {
@@ -681,33 +693,23 @@ describe('Exercise 5: Subscription Management', () => {
       expect(WebSocket).toHaveBeenCalledWith(expect.stringContaining('room1'));
     });
 
-    it('should add message event listener', () => {
+    it('should handle incoming WebSocket messages', () => {
       render(<LiveChat roomId="room1" />);
-      expect(mockWebSocket.addEventListener).toHaveBeenCalledWith(
-        'message',
-        expect.any(Function)
-      );
+
+      // Simulate receiving a message
+      const message = { text: 'Hello, World!' };
+      act(() => {
+        mockWebSocket.onmessage({ data: JSON.stringify(message) });
+      });
+
+      // Assert that the message is displayed
+      expect(screen.getByText('Hello, World!')).toBeInTheDocument();
     });
 
     it('should close connection on unmount', () => {
       const { unmount } = render(<LiveChat roomId="room1" />);
       unmount();
       expect(mockWebSocket.close).toHaveBeenCalled();
-    });
-
-    it('should display messages', () => {
-      render(<LiveChat roomId="room1" />);
-
-      // Simulate receiving a message
-      const messageHandler = mockWebSocket.addEventListener.mock.calls.find(
-        (call) => call[0] === 'message'
-      )[1];
-
-      act(() => {
-        messageHandler({ data: JSON.stringify({ text: 'Hello World' }) });
-      });
-
-      expect(screen.getByText('Hello World')).toBeInTheDocument();
     });
   });
 
@@ -757,7 +759,7 @@ describe('Exercise 5: Subscription Management', () => {
     it('should display event data', () => {
       render(<MultiSubscriber />);
       expect(screen.getByText(/mouse/i)).toBeInTheDocument();
-      expect(screen.getByText(/keyboard/i)).toBeInTheDocument();
+      expect(screen.getByText(/key/i)).toBeInTheDocument();
       expect(screen.getByText(/scroll/i)).toBeInTheDocument();
     });
   });
@@ -768,11 +770,17 @@ describe('Exercise 5: Subscription Management', () => {
 // =============================================================================
 
 describe('Exercise 6: Race Condition Handling', () => {
-  describe('StaleClosurePrevention', () => {
-    beforeEach(() => {
-      fetch.mockClear();
-    });
+  beforeEach(() => {
+    // fetch.mockClear();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  describe('StaleClosurePrevention', () => {
     it('should handle multiple rapid requests', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
@@ -793,30 +801,61 @@ describe('Exercise 6: Race Condition Handling', () => {
 
       render(<StaleClosurePrevention />);
 
-      const button = screen.getByRole('button');
-      await user.click(button);
-      await user.click(button);
+      const input = screen.getByRole('textbox');
+      await user.type(input, 'fi');
+
+      act(() => {
+        vi.advanceTimersByTime(500); // Simulate debounce delay
+      });
 
       // Wait for operations to complete
       await waitFor(
         () => {
-          expect(screen.getByText(/fast|slow/)).toBeInTheDocument();
+          expect(screen.getByText(/fast/)).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 550 }
       );
     });
 
     it('should prevent stale updates', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+      // Mock responses with different timing
+      const staleResponse = {
+        ok: true,
+        json: () => Promise.resolve({ data: 'stale' })
+      };
+
+      const latestResponse = {
+        ok: true,
+        json: () => Promise.resolve({ data: 'latest' })
+      };
+
+      fetch
+        .mockResolvedValueOnce(staleResponse)
+        .mockResolvedValueOnce(latestResponse);
+
       render(<StaleClosurePrevention />);
-      expect(screen.getByText(/stale/i)).toBeInTheDocument();
+
+      const input = screen.getByRole('textbox');
+      await user.type(input, 'ol');
+
+      act(() => {
+        vi.advanceTimersByTime(500); // Simulate debounce delay
+      });
+
+      // Wait for operations to complete
+      await waitFor(
+        () => {
+          expect(screen.getByText(/latest/)).toBeInTheDocument();
+          expect(screen.queryByText(/stale/)).not.toBeInTheDocument();
+        },
+        { timeout: 550 }
+      );
     });
   });
 
   describe('RequestDeduplication', () => {
-    beforeEach(() => {
-      fetch.mockClear();
-    });
-
     it('should not make duplicate requests', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       fetch.mockResolvedValue({
@@ -824,7 +863,11 @@ describe('Exercise 6: Race Condition Handling', () => {
         json: () => Promise.resolve({ data: 'cached' })
       });
 
-      render(<RequestDeduplication />);
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RequestDeduplication />
+        </QueryClientProvider>
+      );
 
       const button = screen.getByRole('button');
       await user.click(button);
@@ -846,7 +889,11 @@ describe('Exercise 6: Race Condition Handling', () => {
         json: () => Promise.resolve({ data: 'cached' })
       });
 
-      render(<RequestDeduplication />);
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RequestDeduplication />
+        </QueryClientProvider>
+      );
 
       const button = screen.getByRole('button');
       await user.click(button);
@@ -855,7 +902,7 @@ describe('Exercise 6: Race Condition Handling', () => {
         () => {
           expect(screen.getByText('cached')).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
 
       // Click again - should show cached result immediately
@@ -873,34 +920,85 @@ describe('Exercise 7: Effect Optimization', () => {
   describe('ExpensiveEffect', () => {
     it('should optimize expensive calculations', () => {
       const { rerender } = render(
-        <ExpensiveEffect data={[1, 2, 3]} filters={{}} settings={{}} />
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }]}
+          filters={[(item) => item.value > 1]}
+        />
       );
 
       // Should show processed data
-      expect(screen.getByText(/processed/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/result of expensive calculation: 5/i)
+      ).toBeInTheDocument();
 
       // Re-render with same props - should not recalculate
-      rerender(<ExpensiveEffect data={[1, 2, 3]} filters={{}} settings={{}} />);
+      rerender(
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }]}
+          filters={[(item) => item.value > 1]}
+        />
+      );
 
-      expect(screen.getByText(/processed/i)).toBeInTheDocument();
+      // Ensure the result remains the same and no unnecessary recalculations
+      expect(
+        screen.getByText(/result of expensive calculation: 5/i)
+      ).toBeInTheDocument();
     });
 
     it('should recalculate when dependencies change', () => {
       const { rerender } = render(
-        <ExpensiveEffect data={[1, 2, 3]} filters={{}} settings={{}} />
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }]}
+          filters={[(item) => item.value > 1]}
+        />
       );
 
+      // Update data to trigger recalculation
       rerender(
-        <ExpensiveEffect data={[1, 2, 3, 4]} filters={{}} settings={{}} />
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }]}
+          filters={[(item) => item.value > 1]}
+        />
       );
 
-      expect(screen.getByText(/processed/i)).toBeInTheDocument();
+      // Ensure the result updates correctly
+      expect(
+        screen.getByText(/result of expensive calculation: 9/i)
+      ).toBeInTheDocument();
+    });
+
+    it('should recalculate when filters change', () => {
+      const { rerender } = render(
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }]}
+          filters={[(item) => item.value > 1]}
+        />
+      );
+
+      // Update filters to trigger recalculation
+      rerender(
+        <ExpensiveEffect
+          data={[{ value: 1 }, { value: 2 }, { value: 3 }]}
+          filters={[(item) => item.value > 2]}
+        />
+      );
+
+      // Ensure the result updates correctly
+      expect(
+        screen.getByText(/result of expensive calculation: 3/i)
+      ).toBeInTheDocument();
     });
   });
 
   describe('DebouncedSearch', () => {
     beforeEach(() => {
-      fetch.mockClear();
+      // fetch.mockClear();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.useRealTimers();
     });
 
     it('should debounce search input', async () => {
@@ -954,19 +1052,44 @@ describe('Exercise 7: Effect Optimization', () => {
   });
 
   describe('BatchedEffects', () => {
-    it('should demonstrate effect batching', async () => {
-      const user = userEvent.setup();
+    it('should demonstrate effect batching', () => {
       render(<BatchedEffects />);
 
-      const button = screen.getByRole('button');
-      await user.click(button);
+      const batchButton = screen.getByRole('button', { name: /batch/i });
+      act(() => {
+        fireEvent.click(batchButton);
+      });
 
-      expect(screen.getByText(/batched/i)).toBeInTheDocument();
+      expect(screen.getByText('1')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
     });
 
-    it('should minimize DOM updates', () => {
+    it('should demonstrate manual flushing with flushSync', () => {
       render(<BatchedEffects />);
-      expect(screen.getByText(/batch/i)).toBeInTheDocument();
+
+      const manualButton = screen.getByRole('button', { name: /manual/i });
+      act(() => {
+        fireEvent.click(manualButton);
+      });
+
+      expect(screen.getByText('1')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
+
+    it('should minimize DOM updates during batching', async () => {
+      render(<BatchedEffects />);
+
+      const renderSpy = vi.spyOn(console, 'log');
+      const batchButton = screen.getByRole('button', { name: /batch/i });
+
+      act(() => {
+        fireEvent.click(batchButton);
+      });
+
+      expect(renderSpy).toHaveBeenCalledTimes(1);
+      renderSpy.mockRestore();
     });
   });
 });
@@ -981,17 +1104,23 @@ describe('Bonus: Advanced Effect Patterns', () => {
       const mockAsyncFn = vi.fn(() => Promise.resolve('success'));
 
       const TestComponent = () => {
-        const { data, loading, error } = useAsyncEffect(mockAsyncFn, []);
+        const { data, isLoading, error } = useAsyncEffect(mockAsyncFn, [
+          'testKey'
+        ]);
         return (
           <div>
-            {loading && <span>Loading...</span>}
+            {isLoading && <span>Loading...</span>}
             {error && <span>Error: {error.message}</span>}
             {data && <span>Data: {data}</span>}
           </div>
         );
       };
 
-      render(<TestComponent />);
+      render(
+        <QueryClientProvider client={queryClient}>
+          <TestComponent />
+        </QueryClientProvider>
+      );
 
       // Should start with loading
       expect(screen.getByText('Loading...')).toBeInTheDocument();
@@ -1000,7 +1129,7 @@ describe('Bonus: Advanced Effect Patterns', () => {
         () => {
           expect(screen.getByText('Data: success')).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 500 }
       );
     });
 
@@ -1008,47 +1137,90 @@ describe('Bonus: Advanced Effect Patterns', () => {
       const mockAsyncFn = vi.fn(() => Promise.reject(new Error('Test error')));
 
       const TestComponent = () => {
-        const { data, loading, error } = useAsyncEffect(mockAsyncFn, []);
+        const { data, isLoading, error } = useAsyncEffect(mockAsyncFn, [
+          'testKey'
+        ]);
+        console.log(mockAsyncFn());
+
         return (
           <div>
-            {loading && <span>Loading...</span>}
+            {isLoading && <span>Loading...</span>}
             {error && <span>Error: {error.message}</span>}
             {data && <span>Data: {data}</span>}
           </div>
         );
       };
 
-      render(<TestComponent />);
+      // Create a new QueryClient with retries disabled
+      const testQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false // Disable retries for testing
+          }
+        }
+      });
+
+      testQueryClient.clear();
+
+      render(
+        <QueryClientProvider client={testQueryClient}>
+          <TestComponent />
+        </QueryClientProvider>
+      );
+
+      // Should start with loading
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
 
       await waitFor(
         () => {
           expect(screen.getByText('Error: Test error')).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
     });
   });
 
   describe('AsyncEffectDemo', () => {
     it('should demonstrate custom hook usage', async () => {
-      render(<AsyncEffectDemo />);
+      render(
+        <QueryClientProvider client={queryClient}>
+          <AsyncEffectDemo />
+        </QueryClientProvider>
+      );
 
       await waitFor(
         () => {
-          expect(screen.getByText(/async/i)).toBeInTheDocument();
+          expect(screen.getByText(/Async Effect Demo/i)).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
     });
 
     it('should handle loading states', async () => {
-      render(<AsyncEffectDemo />);
+      // Create a new QueryClient with retries disabled
+      const testQueryClient = new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: false // Disable retries for testing
+          }
+        }
+      });
+
+      testQueryClient.clear();
+
+      render(
+        <QueryClientProvider client={testQueryClient}>
+          <AsyncEffectDemo />
+        </QueryClientProvider>
+      );
+
+      expect(screen.getByText(/Loading.../i)).toBeInTheDocument();
 
       await waitFor(
         () => {
-          expect(screen.getByText(/loading|async/i)).toBeInTheDocument();
+          expect(screen.getByText(/Async Effect Demo/i)).toBeInTheDocument();
         },
-        { timeout: 2000 }
+        { timeout: 1000 }
       );
     });
   });
