@@ -458,15 +458,103 @@ export function EnvironmentAwareErrorHandler() {
  *   </ValidationErrorBoundary>
  * </NetworkErrorBoundary>
  */
+
+class NetworkError extends Error {
+  constructor(message, field) {
+    super();
+    this.message = message;
+    this.field = field;
+    this.name = 'NetworkError';
+  }
+}
+
 export class NetworkErrorBoundary extends Component {
-  // TODO: Implement network-specific error boundary
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    if (error.name === 'NetworkError') {
+      return { hasError: true };
+    }
+
+    return null;
+  }
+
+  componentDidCatch(error, info) {
+    if (error.name === 'NetworkError') {
+      console.error(error, info.componentStack, React.captureOwnerStack());
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <p>A network error has occured</p>;
+    }
+
+    return this.props.children;
+  }
+}
+
+class ValidationError extends Error {
+  constructor(message, field) {
+    super();
+    this.message = message;
+    this.field = field;
+    this.name = 'ValidationError';
+  }
 }
 
 export class ValidationErrorBoundary extends Component {
-  // TODO: Implement validation-specific error boundary
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    if (error.name === 'ValidationError') {
+      return { hasError: true };
+    }
+
+    return null;
+  }
+
+  componentDidCatch(error, info) {
+    if (error.name === 'ValidationError') {
+      console.error(error, info.componentStack, React.captureOwnerStack());
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <p>A validation error has occured</p>;
+    }
+
+    return this.props.children;
+  }
 }
 
 // Example of error boundary composition
 export function ComposedErrorExample() {
-  // TODO: Implement an example of composed error boundaries
+  return (
+    <NetworkErrorBoundary>
+      <ValidationErrorBoundary>
+        <div>
+          <button
+            onClick={() => {
+              throw new ValidationError('Invalid input', 'fieldName');
+            }}>
+            Test validation
+          </button>
+          <button
+            onClick={() => {
+              throw new NetworkError('Network request failed', 'endpoint');
+            }}>
+            Test network
+          </button>
+        </div>
+      </ValidationErrorBoundary>
+    </NetworkErrorBoundary>
+  );
 }

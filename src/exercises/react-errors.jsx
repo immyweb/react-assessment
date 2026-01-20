@@ -60,7 +60,7 @@ export function BrokenComponent() {
  * - Catch the error without crashing the entire application
  * - Provide a "Reset" button that recovers from the error state
  * - Display an error message when in the error state
- * 
+ *
  * Example usage:
  * <ErrorRecoveryComponent />
  */
@@ -79,7 +79,7 @@ export function ErrorRecoveryComponent() {
  * - Handle potential errors from the fetch operation
  * - Display appropriate loading, error, and success states
  * - Provide a "Retry" button to attempt the operation again after failure
- * 
+ *
  * Example usage:
  * <AsyncErrorHandler endpoint="https://api.example.com/data" />
  */
@@ -102,7 +102,7 @@ AsyncErrorHandler.propTypes = {
  * - Capture error details (message, component name, stack trace)
  * - Provide a way to "send" error reports (simulated)
  * - Include user feedback mechanism (e.g., "Report this error" button)
- * 
+ *
  * Example usage:
  * <ErrorReporter>
  *   <YourComponent />
@@ -133,7 +133,7 @@ export function ErrorReportingExample() {
  * - If one feature fails, the others should still work
  * - Implement progressive enhancement where features are added if supported
  * - Provide appropriate UI feedback for unavailable features
- * 
+ *
  * Example usage:
  * <GracefulDegradation />
  */
@@ -152,7 +152,7 @@ export function GracefulDegradation() {
  * - In development: show detailed error information
  * - In production: show user-friendly messages without technical details
  * - Log errors differently based on environment
- * 
+ *
  * Example usage:
  * <EnvironmentAwareErrorHandler />
  */
@@ -171,7 +171,7 @@ export function EnvironmentAwareErrorHandler() {
  *   (e.g., NetworkErrorBoundary, ValidationErrorBoundary)
  * - Allow boundaries to be nested with appropriate error propagation
  * - Implement different recovery strategies based on error type
- * 
+ *
  * Example usage:
  * <NetworkErrorBoundary>
  *   <ValidationErrorBoundary>
