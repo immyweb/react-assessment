@@ -51,7 +51,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Custom hook creation ✅
 - Hook composition patterns ✅
 - useLayoutEffect use cases ✅
-- useSyncExternalStore integration ❌
+- useSyncExternalStore integration ✅
 
 ### 6. Performance Optimization (react-performance.jsx)
 

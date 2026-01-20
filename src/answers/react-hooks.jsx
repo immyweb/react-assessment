@@ -8,12 +8,13 @@
  * - useImperativeHandle and forwardRef
  * - Custom hooks
  * - useLayoutEffect vs useEffect timing differences
+ * - useSyncExternalStore for external store integration
  *
  * Each exercise focuses on one clear example per hook concept
  * with straightforward requirements.
  */
 
-import React, {
+import {
   useState,
   useEffect,
   useMemo,
@@ -21,6 +22,7 @@ import React, {
   useRef,
   useImperativeHandle,
   useLayoutEffect,
+  useSyncExternalStore,
   forwardRef
 } from 'react';
 
@@ -184,20 +186,16 @@ export const CustomInput = forwardRef(function CustomInput(props, ref) {
   const [value, setValue] = useState(props.defaultValue || '');
   const inputRef = useRef(null);
 
-  useImperativeHandle(
-    ref,
-    () => {
-      return {
-        focus() {
-          inputRef.current.focus();
-        },
-        reset() {
-          setValue('');
-        }
-      };
-    },
-    []
-  );
+  useImperativeHandle(ref, () => {
+    return {
+      focus() {
+        inputRef.current.focus();
+      },
+      reset() {
+        setValue('');
+      }
+    };
+  }, []);
 
   return (
     <input
@@ -407,6 +405,121 @@ export function LayoutEffectDemo() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// EXERCISE 7: useSyncExternalStore
+// =============================================================================
+
+/**
+ * Exercise 7a: Subscribe to Browser API with useSyncExternalStore
+ *
+ * Requirements:
+ * - Create a component that displays online/offline status
+ * - Use useSyncExternalStore to subscribe to navigator.onLine
+ * - Implement subscribe function with proper cleanup
+ * - Implement getSnapshot function to return current online status
+ * - Handle server-side rendering with getServerSnapshot
+ */
+
+export function OnlineStatusIndicator() {
+  function subscribe(callback) {
+    window.addEventListener('online', callback);
+    window.addEventListener('offline', callback);
+    return () => {
+      window.removeEventListener('online', callback);
+      window.removeEventListener('offline', callback);
+    };
+  }
+
+  function getSnapshot() {
+    return navigator.onLine;
+  }
+
+  function getServerSnapshot() {
+    return true; // Always show "Online" for server-generated HTML
+  }
+
+  const isOnline = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
+
+  return (
+    <div>
+      <h2>Network Status</h2>
+      <p>Status: {isOnline ? '✅ Online' : '❌ Disconnected'}</p>
+      <p>
+        <small>Try turning your network on/off to see the status change</small>
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Exercise 7b: Create a Custom External Store with useSyncExternalStore
+ *
+ * Requirements:
+ * - Create a simple external store for managing a counter
+ * - Implement subscribe, getSnapshot methods on the store
+ * - Create a component that uses useSyncExternalStore to read from the store
+ * - Add buttons to increment, decrement, and reset the counter
+ */
+
+const counterStore = (() => {
+  let count = 0;
+  const listeners = new Set();
+
+  function notify() {
+    listeners.forEach((listener) => listener());
+  }
+
+  return {
+    subscribe(callback) {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    getSnapshot() {
+      return count;
+    },
+    increment() {
+      count++;
+      notify();
+    },
+    decrement() {
+      count--;
+      notify();
+    },
+    reset() {
+      count = 0;
+      notify();
+    }
+  };
+})();
+
+export function ExternalStoreCounter() {
+  const count = useSyncExternalStore(
+    counterStore.subscribe,
+    counterStore.getSnapshot
+  );
+
+  return (
+    <div>
+      <h2>External Store Counter</h2>
+      <p>Count: {count}</p>
+      <div>
+        <button onClick={() => counterStore.decrement()}>-</button>
+        <button onClick={() => counterStore.increment()}>+</button>
+        <button onClick={() => counterStore.reset()}>Reset</button>
+      </div>
+      <p>
+        <small>
+          This counter state lives outside React in an external store
+        </small>
+      </p>
     </div>
   );
 }

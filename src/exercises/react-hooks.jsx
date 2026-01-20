@@ -8,6 +8,7 @@
  * - useImperativeHandle and forwardRef
  * - Custom hooks
  * - useLayoutEffect vs useEffect timing differences
+ * - useSyncExternalStore for external store integration
  *
  * Each exercise focuses on one clear example per hook concept
  * with straightforward requirements.
@@ -21,6 +22,7 @@ import React, {
   useRef,
   useImperativeHandle,
   useLayoutEffect,
+  useSyncExternalStore,
   forwardRef
 } from 'react';
 
@@ -342,6 +344,102 @@ export function LayoutEffectDemo() {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// EXERCISE 7: useSyncExternalStore
+// =============================================================================
+
+/**
+ * Exercise 7a: Subscribe to Browser API with useSyncExternalStore
+ *
+ * Requirements:
+ * - Create a component that displays online/offline status
+ * - Use useSyncExternalStore to subscribe to navigator.onLine
+ * - Implement subscribe function with proper cleanup
+ * - Implement getSnapshot function to return current online status
+ */
+export function OnlineStatusIndicator() {
+  // TODO: Implement subscribe function
+  // This function should:
+  // 1. Accept a callback parameter
+  // 2. Add event listeners for 'online' and 'offline' events
+  // 3. Return cleanup function that removes event listeners
+
+  // TODO: Implement getSnapshot function
+  // This function should return the current value of navigator.onLine
+
+  // TODO: Implement getServerSnapshot function
+  // This function should return a default value for server-side rendering (true)
+
+  // TODO: Use useSyncExternalStore to get the online status
+  // Pass subscribe, getSnapshot, and getServerSnapshot
+
+  return (
+    <div>
+      <h2>Network Status</h2>
+      <p>Status: {/* Display online/offline status with emoji */}</p>
+      <p>
+        <small>Try turning your network on/off to see the status change</small>
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Exercise 7b: Create a Custom External Store with useSyncExternalStore
+ *
+ * Requirements:
+ * - Create a simple external store for managing a counter
+ * - Implement subscribe, getSnapshot methods on the store
+ * - Create a component that uses useSyncExternalStore to read from the store
+ * - Add buttons to increment, decrement, and reset the counter
+ */
+
+// TODO: Create a counterStore object with:
+// - A private state variable to hold the count
+// - listeners Set to track subscribers
+// - subscribe(callback) method that adds listener and returns cleanup function
+// - getSnapshot() method that returns current count
+// - increment() method that updates count and notifies listeners
+// - decrement() method that updates count and notifies listeners
+// - reset() method that sets count to 0 and notifies listeners
+
+export function ExternalStoreCounter() {
+  // TODO: Use useSyncExternalStore to subscribe to counterStore
+  // Pass counterStore.subscribe and counterStore.getSnapshot
+
+  return (
+    <div>
+      <h2>External Store Counter</h2>
+      <p>Count: {/* Display count from store */}</p>
+      <div>
+        <button
+          onClick={() => {
+            // TODO: Call counterStore.decrement()
+          }}>
+          -
+        </button>
+        <button
+          onClick={() => {
+            // TODO: Call counterStore.increment()
+          }}>
+          +
+        </button>
+        <button
+          onClick={() => {
+            // TODO: Call counterStore.reset()
+          }}>
+          Reset
+        </button>
+      </div>
+      <p>
+        <small>
+          This counter state lives outside React in an external store
+        </small>
+      </p>
     </div>
   );
 }
