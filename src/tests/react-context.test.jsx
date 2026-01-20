@@ -384,27 +384,3 @@ describe('Exercise 4: Context Optimization Techniques', () => {
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 });
-
-// =============================================================================
-// Demo Component Tests
-// =============================================================================
-
-describe('Demo Component', () => {
-  it('should render all pattern components', () => {
-    render(
-      <OptimizedUserProvider>
-        <CartProvider>
-          <UserProvider>
-            <ThemeProvider theme={{ name: 'light', color: '#fff' }}>
-              <ContextPatternDemo />
-            </ThemeProvider>
-          </UserProvider>
-        </CartProvider>
-      </OptimizedUserProvider>
-    );
-
-    expect(
-      screen.getByText('Context Pattern Demonstrations')
-    ).toBeInTheDocument();
-  });
-});

@@ -416,49 +416,75 @@ function UserNameWithContext() {
  * - Prevent unnecessary component re-renders
  */
 
-// TODO: Create separate contexts for user data and user actions
-export const OptimizedUserDataContext = null;
-export const OptimizedUserActionsContext = null;
+export const OptimizedUserDataContext = createContext();
+export const OptimizedUserActionsContext = createContext();
 
-// TODO: Create OptimizedUserProvider
 export function OptimizedUserProvider({ children }) {
-  // TODO: Implement user state with useState
-  // TODO: Create memoized action functions with useCallback
-  // TODO: Create memoized user data object with useMemo
-  // TODO: Provide separate contexts for data and actions
+  const [user, setUser] = useState(null);
+
+  const login = useCallback((person) => {
+    setUser({ name: person.name });
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+  }, []);
+
+  const memoizedUser = useMemo(() => ({ user }), [user]);
+
+  return (
+    <OptimizedUserDataContext.Provider value={memoizedUser}>
+      <OptimizedUserActionsContext.Provider value={{ login, logout }}>
+        {children}
+      </OptimizedUserActionsContext.Provider>
+    </OptimizedUserDataContext.Provider>
+  );
 }
 
-// TODO: Create optimized hooks for separate concerns
 export function useUserData() {
-  // TODO: Hook for accessing user data only
+  const context = useContext(OptimizedUserDataContext);
+  if (!context)
+    throw new Error('useUserData must be used within a OptimizedUserProvider');
+  return context;
 }
 
 export function useUserActions() {
-  // TODO: Hook for accessing user actions only
+  const context = useContext(OptimizedUserActionsContext);
+  if (!context)
+    throw new Error(
+      'useUserActions must be used within a OptimizedUserProvider'
+    );
+  return context;
 }
 
-// TODO: Create component that only uses user data
 export function OptimizedUserDisplay() {
-  // TODO: Use only useUserData to prevent re-renders when actions change
-  return <div>Optimized User Display</div>;
-}
+  const user = useUserData();
 
-// TODO: Create component that only uses user actions
-export function OptimizedUserActions() {
-  // TODO: Use only useUserActions to prevent re-renders when data changes
-  return <div>Optimized User Actions</div>;
-}
-
-// Demo component showing all patterns
-export function ContextPatternDemo() {
   return (
     <div>
-      <h2>Context Pattern Demonstrations</h2>
-      <ThemedButton>Themed Button</ThemedButton>
-      <UserProfile />
-      <ShoppingCart />
-      <OptimizedUserDisplay />
-      <OptimizedUserActions />
+      <h3>Optimized User Display</h3>
+      <p>{user?.name || 'Guest'}</p>
     </div>
+  );
+}
+
+export function OptimizedUserActions() {
+  const [name, setName] = useState('');
+  const { login, logout } = useUserActions();
+
+  function handleLogin(evt) {
+    evt.preventDefault();
+    login({ name });
+  }
+
+  return (
+    <form onSubmit={handleLogin}>
+      <h3>Optimized User Actions</h3>
+      <label>
+        Name: <input name="name" onChange={(e) => setName(e.target.value)} />
+      </label>
+      <button type="submit">Login</button>
+      <button onClick={logout}>Log out</button>
+    </form>
   );
 }

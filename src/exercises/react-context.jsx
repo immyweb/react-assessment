@@ -15,7 +15,8 @@ import React, {
   useContext,
   useState,
   useReducer,
-  useMemo
+  useMemo,
+  useCallback
 } from 'react';
 
 // =============================================================================
@@ -271,18 +272,4 @@ export function OptimizedUserDisplay() {
 export function OptimizedUserActions() {
   // TODO: Use only useUserActions to prevent re-renders when data changes
   return <div>Optimized User Actions</div>;
-}
-
-// Demo component showing all patterns
-export function ContextPatternDemo() {
-  return (
-    <div>
-      <h2>Context Pattern Demonstrations</h2>
-      <ThemedButton>Themed Button</ThemedButton>
-      <UserProfile />
-      <ShoppingCart />
-      <OptimizedUserDisplay />
-      <OptimizedUserActions />
-    </div>
-  );
 }

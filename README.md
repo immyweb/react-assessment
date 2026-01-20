@@ -39,9 +39,9 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - createContext and useContext ✅
 - Context provider patterns ✅
 - Avoiding prop drilling ✅
-- Multiple context composition ❌
-- Context optimization techniques ❌
-- Custom context hooks ❌
+- Multiple context composition ✅
+- Context optimization techniques ✅
+- Custom context hooks ✅
 
 ### 5. Advanced Hooks (react-hooks.jsx)
 
