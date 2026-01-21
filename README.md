@@ -142,8 +142,8 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Discriminated unions with props ✅
 - Polymorphic components (as prop pattern) ✅
 - Generic hooks ✅
-- Type guards and narrowing ❌
-- Utility types (Pick, Omit, Partial, Required) ❌
+- Type guards and narrowing ✅
+- Utility types (Pick, Omit, Partial, Required) ✅
 
 ### 16. Testing Patterns (react-testing.js)
 

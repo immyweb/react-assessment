@@ -8,12 +8,6 @@
  * - Event handler typing
  * - React.ReactNode vs React.ReactElement vs PropsWithChildren
  * - Discriminated unions with props
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import React, {
@@ -21,6 +15,7 @@ import React, {
   useRef,
   useImperativeHandle,
   useState,
+  useEffect,
   ReactNode,
   ReactElement,
   PropsWithChildren,
@@ -28,7 +23,8 @@ import React, {
   ElementType,
   MouseEvent,
   ChangeEvent,
-  FormEvent
+  FormEvent,
+  JSX
 } from 'react';
 
 // =============================================================================
@@ -258,16 +254,13 @@ export function LoginForm({ onSubmit }: LoginFormProps): ReactElement {
  * - Component should be fully typed
  */
 
-interface CustomInputProps {
+interface CustomInputProps extends ComponentProps<'input'> {
   label: string;
   error?: string;
-  // TODO: Add other input props using ComponentProps
 }
 
-// TODO: Implement forwardRef with proper typing
 export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
   ({ label, error, ...props }, ref) => {
-    // TODO: Implement component
     return (
       <div>
         <label>{label}</label>
@@ -436,7 +429,11 @@ export function Text<E extends ElementType = 'span'>({
 }: TextProps<E>): ReactElement {
   // TODO: Implement polymorphic text component
   const Component = as || 'span';
-  return <Component {...props}>{children}</Component>;
+  return (
+    <Component style={{ fontWeight: weight }} className={color} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 // =============================================================================
@@ -699,8 +696,8 @@ export type PropsOf<
 > = T extends keyof JSX.IntrinsicElements
   ? JSX.IntrinsicElements[T]
   : T extends React.JSXElementConstructor<infer P>
-  ? P
-  : never;
+    ? P
+    : never;
 
 /**
  * Make specific properties required

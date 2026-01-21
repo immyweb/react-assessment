@@ -8,12 +8,6 @@
  * - Event handler typing
  * - React.ReactNode vs React.ReactElement vs PropsWithChildren
  * - Discriminated unions with props
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import React, {
@@ -21,6 +15,7 @@ import React, {
   useRef,
   useImperativeHandle,
   useState,
+  useEffect,
   ReactNode,
   ReactElement,
   PropsWithChildren,
@@ -28,7 +23,8 @@ import React, {
   ElementType,
   MouseEvent,
   ChangeEvent,
-  FormEvent
+  FormEvent,
+  JSX
 } from 'react';
 
 // =============================================================================
@@ -56,19 +52,29 @@ import React, {
  * </div>
  */
 
-// TODO: Define User interface
 interface User {
-  // TODO: Add properties
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+  role: 'admin' | 'user' | 'guest';
 }
 
-// TODO: Define UserProfileProps interface
 interface UserProfileProps {
-  // TODO: Add properties
+  user: User;
+  onEdit?: (user: User) => void;
 }
 
 export function UserProfile({ user, onEdit }: UserProfileProps): ReactElement {
-  // TODO: Implement this component
-  return <div>TODO</div>;
+  return (
+    <div className="user-profile">
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <p>Age: {user.age}</p>
+      <p>Role: {user.role}</p>
+      {onEdit && <button onClick={() => onEdit(user)}>Edit</button>}
+    </div>
+  );
 }
 
 // =============================================================================
@@ -93,9 +99,10 @@ export function UserProfile({ user, onEdit }: UserProfileProps): ReactElement {
  * />
  */
 
-// TODO: Define ListProps interface with generic type
 interface ListProps<T> {
-  // TODO: Add properties
+  items: T[];
+  renderItem: (item: T) => ReactNode;
+  keyExtractor: (item: T) => string | number;
 }
 
 export function List<T>({
@@ -103,8 +110,13 @@ export function List<T>({
   renderItem,
   keyExtractor
 }: ListProps<T>): ReactElement {
-  // TODO: Implement generic list component
-  return <div>TODO</div>;
+  return (
+    <div>
+      {items.map((item) => {
+        return <div key={keyExtractor(item)}>{renderItem(item)}</div>;
+      })}
+    </div>
+  );
 }
 
 // =============================================================================
@@ -138,19 +150,47 @@ type ButtonLinkProps = {
 };
 
 type ButtonClickProps = {
-  // TODO: Define for variant 'button'
+  variant: 'button';
+  onClick: () => void;
+  children: ReactNode;
+  disabled?: boolean;
+  className?: string;
 };
 
 type ButtonSubmitProps = {
-  // TODO: Define for variant 'submit'
+  variant: 'submit';
+  children: ReactNode;
+  disabled?: boolean;
+  className?: string;
 };
 
 type ButtonProps = ButtonLinkProps | ButtonClickProps | ButtonSubmitProps;
 
 export function Button(props: ButtonProps): ReactElement {
-  // TODO: Implement button with discriminated union
-  // Use type guards to handle different variants
-  return <button>TODO</button>;
+  if (props.variant === 'link') {
+    return (
+      <a href={props.href} className={props.className}>
+        {props.children}
+      </a>
+    );
+  }
+
+  if (props.variant === 'button') {
+    return (
+      <button
+        onClick={props.onClick}
+        className={props.className}
+        disabled={props.disabled}>
+        {props.children}
+      </button>
+    );
+  }
+
+  return (
+    <button type="submit" className={props.className} disabled={props.disabled}>
+      {props.children}
+    </button>
+  );
 }
 
 // =============================================================================
@@ -187,29 +227,24 @@ export function LoginForm({ onSubmit }: LoginFormProps): ReactElement {
   const [password, setPassword] = useState<string>('');
   const [remember, setRemember] = useState<boolean>(false);
 
-  // TODO: Type this event handler correctly
-  const handleEmailChange = (e: any) => {
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
 
-  // TODO: Type this event handler correctly
-  const handlePasswordChange = (e: any) => {
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
   };
 
-  // TODO: Type this event handler correctly
-  const handleRememberChange = (e: any) => {
+  const handleRememberChange = (e: ChangeEvent<HTMLInputElement>) => {
     setRemember(e.target.checked);
   };
 
-  // TODO: Type this event handler correctly
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSubmit({ email, password, remember });
   };
 
-  // TODO: Type this event handler correctly
-  const handleButtonClick = (e: any) => {
+  const handleButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
     console.log('Button clicked at:', e.clientX, e.clientY);
   };
 
@@ -261,13 +296,10 @@ export function LoginForm({ onSubmit }: LoginFormProps): ReactElement {
 interface CustomInputProps {
   label: string;
   error?: string;
-  // TODO: Add other input props using ComponentProps
 }
 
-// TODO: Implement forwardRef with proper typing
 export const CustomInput = forwardRef<HTMLInputElement, CustomInputProps>(
   ({ label, error, ...props }, ref) => {
-    // TODO: Implement component
     return (
       <div>
         <label>{label}</label>
@@ -296,7 +328,6 @@ CustomInput.displayName = 'CustomInput';
  * - Render children in modal when open
  */
 
-// TODO: Define ModalHandle interface
 export interface ModalHandle {
   open: () => void;
   close: () => void;
@@ -308,26 +339,47 @@ interface ModalProps {
   onClose?: () => void;
 }
 
-// TODO: Implement Modal with useImperativeHandle
 export const Modal = forwardRef<ModalHandle, ModalProps>(
   ({ children, onClose }, ref) => {
     const [isOpen, setIsOpen] = useState(false);
+    const onCloseRef = useRef(onClose);
 
-    // TODO: Use useImperativeHandle to expose methods
+    // Update the ref whenever onClose changes
+    useEffect(() => {
+      onCloseRef.current = onClose;
+    }, [onClose]);
+
     useImperativeHandle(ref, () => ({
-      // TODO: Implement interface methods
-      open: () => {},
-      close: () => {},
-      isOpen: () => false
+      open: () => {
+        setIsOpen(true);
+      },
+      close: () => {
+        setIsOpen(false);
+        console.log(onCloseRef.current);
+
+        if (onCloseRef.current) {
+          console.log('close');
+          onCloseRef.current();
+        }
+      },
+      isOpen: () => isOpen
     }));
 
     if (!isOpen) return null;
 
     return (
-      <div className="modal-overlay">
+      <div className="modal-overlay" role="dialog">
         <div className="modal-content">
           {children}
-          <button onClick={() => setIsOpen(false)}>Close</button>
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              if (onCloseRef.current) {
+                onCloseRef.current();
+              }
+            }}>
+            Close
+          </button>
         </div>
       </div>
     );
@@ -351,7 +403,6 @@ Modal.displayName = 'Modal';
  * - Each should render children appropriately
  */
 
-// TODO: Component that accepts ReactNode (strings, numbers, elements, arrays, etc.)
 interface ContainerProps {
   children: ReactNode;
   className?: string;
@@ -361,11 +412,9 @@ export function Container({
   children,
   className
 }: ContainerProps): ReactElement {
-  // TODO: Implement container
   return <div className={className}>{children}</div>;
 }
 
-// TODO: Component that accepts only ReactElement (strict typing)
 interface StrictContainerProps {
   children: ReactElement | ReactElement[];
   wrapper?: string;
@@ -373,13 +422,13 @@ interface StrictContainerProps {
 
 export function StrictContainer({
   children,
-  wrapper
+  wrapper = 'div'
 }: StrictContainerProps): ReactElement {
-  // TODO: Implement strict container
-  return <div>{children}</div>;
+  const Wrapper = wrapper as keyof JSX.IntrinsicElements;
+
+  return <Wrapper>{children}</Wrapper>;
 }
 
-// TODO: Component using PropsWithChildren utility type
 interface CardProps {
   title: string;
   footer?: ReactNode;
@@ -390,7 +439,6 @@ export function Card({
   footer,
   children
 }: PropsWithChildren<CardProps>): ReactElement {
-  // TODO: Implement card with PropsWithChildren
   return (
     <div className="card">
       <h3>{title}</h3>
@@ -426,7 +474,6 @@ type TextOwnProps<E extends ElementType = ElementType> = {
 type TextProps<E extends ElementType> = TextOwnProps<E> &
   Omit<ComponentProps<E>, keyof TextOwnProps>;
 
-// TODO: Implement polymorphic component
 export function Text<E extends ElementType = 'span'>({
   as,
   color = 'primary',
@@ -434,7 +481,6 @@ export function Text<E extends ElementType = 'span'>({
   children,
   ...props
 }: TextProps<E>): ReactElement {
-  // TODO: Implement polymorphic text component
   const Component = as || 'span';
   return <Component {...props}>{children}</Component>;
 }
@@ -465,15 +511,34 @@ export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): UseLocalStorageReturn<T> {
-  // TODO: Implement generic useLocalStorage hook
-  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(`Error reading localStorage key "${key}":`, error);
+      return initialValue;
+    }
+  });
 
   const setValue = (value: T | ((prev: T) => T)) => {
-    // TODO: Implement setValue
+    try {
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      localStorage.setItem(key, JSON.stringify(valueToStore));
+      setStoredValue(valueToStore);
+    } catch (error) {
+      console.error(`Error setting localStorage key "${key}":`, error);
+    }
   };
 
   const removeValue = () => {
-    // TODO: Implement removeValue
+    try {
+      localStorage.removeItem(key);
+      setStoredValue(initialValue);
+    } catch (error) {
+      console.error(`Error removing localStorage key "${key}":`, error);
+    }
   };
 
   return [storedValue, setValue, removeValue];
@@ -495,12 +560,10 @@ export function useLocalStorage<T>(
  * - onRowClick should provide typed row data
  */
 
-// TODO: Define base type constraint
 interface HasId {
   id: string | number;
 }
 
-// TODO: Define Column interface
 interface Column<T extends HasId> {
   key: keyof T;
   header: string;
@@ -508,7 +571,6 @@ interface Column<T extends HasId> {
   sortable?: boolean;
 }
 
-// TODO: Define DataTableProps
 interface DataTableProps<T extends HasId> {
   data: T[];
   columns: Column<T>[];
@@ -522,7 +584,6 @@ export function DataTable<T extends HasId>({
   onRowClick,
   keyExtractor = (row) => row.id
 }: DataTableProps<T>): ReactElement {
-  // TODO: Implement generic data table
   return (
     <table>
       <thead>
@@ -564,7 +625,6 @@ export function DataTable<T extends HasId>({
  * - Render different UI based on response type
  */
 
-// TODO: Define response types with discriminated union
 interface LoadingResponse {
   status: 'loading';
 }
@@ -581,7 +641,6 @@ interface ErrorResponse {
 
 type ApiResponse<T> = LoadingResponse | SuccessResponse<T> | ErrorResponse;
 
-// TODO: Create type guard functions
 function isLoading<T>(response: ApiResponse<T>): response is LoadingResponse {
   return response.status === 'loading';
 }
@@ -589,16 +648,13 @@ function isLoading<T>(response: ApiResponse<T>): response is LoadingResponse {
 function isSuccess<T>(
   response: ApiResponse<T>
 ): response is SuccessResponse<T> {
-  // TODO: Implement type guard
-  return false;
+  return response.status === 'success';
 }
 
 function isError<T>(response: ApiResponse<T>): response is ErrorResponse {
-  // TODO: Implement type guard
-  return false;
+  return response.status === 'error';
 }
 
-// TODO: Component using type guards
 interface ResponseDisplayProps<T> {
   response: ApiResponse<T>;
   renderData: (data: T) => ReactNode;
@@ -608,7 +664,6 @@ export function ResponseDisplay<T>({
   response,
   renderData
 }: ResponseDisplayProps<T>): ReactElement {
-  // TODO: Use type guards to render appropriate UI
   if (isLoading(response)) {
     return <div>Loading...</div>;
   }
@@ -638,7 +693,6 @@ export function ResponseDisplay<T>({
  * - Use Required for required props
  * - Use Readonly for immutable props
  */
-
 // Base user type
 interface BaseUser {
   id: number;
@@ -649,7 +703,6 @@ interface BaseUser {
   phone: string;
 }
 
-// TODO: Component using Pick - only show basic info
 type UserBasicInfo = Pick<BaseUser, 'id' | 'name' | 'email'>;
 
 interface UserBasicCardProps {
@@ -657,11 +710,15 @@ interface UserBasicCardProps {
 }
 
 export function UserBasicCard({ user }: UserBasicCardProps): ReactElement {
-  // TODO: Implement component showing only picked properties
-  return <div>TODO</div>;
+  return (
+    <div>
+      <p>{user.id}</p>
+      <p>{user.name}</p>
+      <p>{user.email}</p>
+    </div>
+  );
 }
 
-// TODO: Component using Omit - exclude sensitive info
 type PublicUser = Omit<BaseUser, 'email' | 'phone' | 'address'>;
 
 interface PublicUserCardProps {
@@ -669,11 +726,15 @@ interface PublicUserCardProps {
 }
 
 export function PublicUserCard({ user }: PublicUserCardProps): ReactElement {
-  // TODO: Implement component with omitted properties
-  return <div>TODO</div>;
+  return (
+    <div>
+      <p>{user.id}</p>
+      <p>{user.name}</p>
+      <p>{user.age}</p>
+    </div>
+  );
 }
 
-// TODO: Component using Partial - all props optional for editing
 interface UserFormProps {
   initialUser?: Partial<BaseUser>;
   onSubmit: (user: BaseUser) => void;
@@ -683,8 +744,78 @@ export function UserForm({
   initialUser,
   onSubmit
 }: UserFormProps): ReactElement {
-  // TODO: Implement form with partial initial values
-  return <form>TODO</form>;
+  const [user, setUser] = useState<Partial<BaseUser>>({
+    id: initialUser?.id || Date.now(),
+    name: initialUser?.name || '',
+    email: initialUser?.email || '',
+    age: initialUser?.age || 18,
+    address: initialUser?.address || '',
+    phone: initialUser?.phone || ''
+  });
+
+  if (!initialUser) {
+    return <form role="form"></form>;
+  }
+
+  function handleSubmit(evt: FormEvent<HTMLFormElement>) {
+    evt.preventDefault();
+    if (
+      user.id !== undefined &&
+      user.name &&
+      user.email &&
+      user.age !== undefined
+    ) {
+      onSubmit(user as BaseUser);
+    } else {
+      console.error('Missing required user fields');
+    }
+  }
+
+  return (
+    <form role="form" onSubmit={handleSubmit}>
+      <label htmlFor="name">Name</label>
+      <input
+        name="name"
+        id="name"
+        value={user.name}
+        onChange={(e) => setUser({ ...user, name: e.target.value })}
+      />
+
+      <label htmlFor="email">Email</label>
+      <input
+        name="email"
+        id="email"
+        value={user.email}
+        onChange={(e) => setUser({ ...user, email: e.target.value })}
+      />
+
+      <label htmlFor="age">Age</label>
+      <input
+        name="age"
+        id="age"
+        value={user.age}
+        onChange={(e) => setUser({ ...user, age: Number(e.target.value) })}
+      />
+
+      <label htmlFor="address">Address</label>
+      <input
+        name="address"
+        id="address"
+        value={user.address}
+        onChange={(e) => setUser({ ...user, address: e.target.value })}
+      />
+
+      <label htmlFor="phone">Phone</label>
+      <input
+        name="phone"
+        id="phone"
+        value={user.phone}
+        onChange={(e) => setUser({ ...user, phone: e.target.value })}
+      />
+
+      <button type="submit">Submit</button>
+    </form>
+  );
 }
 
 // =============================================================================
@@ -699,8 +830,8 @@ export type PropsOf<
 > = T extends keyof JSX.IntrinsicElements
   ? JSX.IntrinsicElements[T]
   : T extends React.JSXElementConstructor<infer P>
-  ? P
-  : never;
+    ? P
+    : never;
 
 /**
  * Make specific properties required

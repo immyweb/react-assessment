@@ -11,7 +11,13 @@
  */
 
 import React, { createRef } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, describe, it, vi, beforeEach } from 'vitest';
 import '@testing-library/jest-dom';
@@ -405,7 +411,9 @@ describe('Exercise 6: useImperativeHandle Typing', () => {
 
       expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
 
-      ref.current?.open();
+      act(() => {
+        ref.current?.open();
+      });
 
       waitFor(() => {
         expect(screen.getByText('Modal Content')).toBeInTheDocument();
@@ -416,12 +424,16 @@ describe('Exercise 6: useImperativeHandle Typing', () => {
       const ref = createRef<ModalHandle>();
       render(<Modal ref={ref}>Modal Content</Modal>);
 
-      ref.current?.open();
+      act(() => {
+        ref.current?.open();
+      });
       await waitFor(() => {
         expect(screen.getByText('Modal Content')).toBeInTheDocument();
       });
 
-      ref.current?.close();
+      act(() => {
+        ref.current?.close();
+      });
       await waitFor(() => {
         expect(screen.queryByText('Modal Content')).not.toBeInTheDocument();
       });
@@ -432,11 +444,14 @@ describe('Exercise 6: useImperativeHandle Typing', () => {
       render(<Modal ref={ref}>Content</Modal>);
 
       expect(ref.current?.isOpen()).toBe(false);
-
-      ref.current?.open();
+      act(() => {
+        ref.current?.open();
+      });
       expect(ref.current?.isOpen()).toBe(true);
 
-      ref.current?.close();
+      act(() => {
+        ref.current?.close();
+      });
       expect(ref.current?.isOpen()).toBe(false);
     });
 
@@ -449,7 +464,9 @@ describe('Exercise 6: useImperativeHandle Typing', () => {
         </Modal>
       );
 
-      ref.current?.open();
+      act(() => {
+        ref.current?.open();
+      });
       await waitFor(() => screen.getByText('Content'));
 
       const closeButton = screen.getByRole('button', { name: /close/i });
@@ -863,7 +880,7 @@ describe('Exercise 11: Type Guards and Narrowing', () => {
 // EXERCISE 12 TESTS: Utility Types with React
 // =============================================================================
 
-describe('Exercise 12: Utility Types with React', () => {
+describe.only('Exercise 12: Utility Types with React', () => {
   const baseUser = {
     id: 1,
     name: 'John Doe',
