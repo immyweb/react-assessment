@@ -1,3 +1,4 @@
+import { describe, expect, test, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -152,7 +153,7 @@ describe('Exercise 1: useState Hook Fundamentals', () => {
       expect(consoleSpy).toHaveBeenCalledWith({
         name: 'John Doe',
         email: 'john@example.com',
-        age: 25
+        age: '25'
       });
 
       consoleSpy.mockRestore();

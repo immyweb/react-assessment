@@ -9,12 +9,6 @@
  * - State lifting patterns
  * - useReducer for complex state
  * - State normalization techniques
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import { useState, useReducer, ReactElement, ChangeEvent } from 'react';
