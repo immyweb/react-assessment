@@ -17,7 +17,7 @@
  * - Test cases to validate implementation
  */
 
-import { useState, useReducer } from 'react';
+import { useState, useReducer, ReactElement, ChangeEvent } from 'react';
 
 // =============================================================================
 // EXERCISE 1: useState Hook Fundamentals
@@ -34,8 +34,8 @@ import { useState, useReducer } from 'react';
  * - Decrement button decreases count by 1
  * - Reset button sets count to 0
  */
-export function Counter() {
-  const [count, setCount] = useState(0);
+export function Counter(): ReactElement {
+  const [count, setCount] = useState<number>(0);
 
   return (
     <>
@@ -54,16 +54,16 @@ export function Counter() {
  * Should display current state values
  * Should handle form submission (console.log the values)
  */
-export function UserProfile() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [age, setAge] = useState(0);
+export function UserProfile(): ReactElement {
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [age, setAge] = useState<number>(0);
 
-  function onSubmit(formData) {
+  function onSubmit(formData: FormData) {
     const result = {
       name: formData.get('name'),
       email: formData.get('email'),
-      age: parseInt(formData.get('age'))
+      age: formData.get('age')
     };
     console.log(result);
   }
@@ -100,7 +100,7 @@ export function UserProfile() {
             name="age"
             type="number"
             value={age}
-            onChange={(e) => setAge(e.target.value)}
+            onChange={(e) => setAge(Number(e.target.value))}
           />
         </label>
       </form>
@@ -124,8 +124,8 @@ export function UserProfile() {
  * - Direct update button may not work correctly when clicked rapidly
  * - Functional update button should work correctly in all cases
  */
-export function FunctionalUpdates() {
-  const [count, setCount] = useState(0);
+export function FunctionalUpdates(): ReactElement {
+  const [count, setCount] = useState<number>(0);
 
   return (
     <>
@@ -154,8 +154,14 @@ export function FunctionalUpdates() {
  * - Updating age should preserve name and email
  * - Should display current object state
  */
-export function PersonInfo() {
-  const [person, setPerson] = useState({
+interface Person {
+  name: string;
+  age: number;
+  email: string;
+}
+
+export function PersonInfo(): ReactElement {
+  const [person, setPerson] = useState<Person>({
     name: '',
     age: 0,
     email: ''
@@ -211,14 +217,20 @@ export function PersonInfo() {
  * - Should avoid deeply nested state structures
  * - Should demonstrate derived state calculations
  */
-export function StateStructure() {
-  const [user, setUser] = useState({
+interface User {
+  name: string;
+  age: number;
+  email: string;
+}
+
+export function StateStructure(): ReactElement {
+  const [user, setUser] = useState<User>({
     name: 'Charlie',
     age: 44,
     email: 'charlie@email.com'
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
 
   const isAdult = user.age >= 18;
 
@@ -260,21 +272,27 @@ export function StateStructure() {
  * - Removing todos should filter out the item
  * - Each todo should have id, text, and completed properties
  */
+interface Todo {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
 let nextId = 0;
-export function TodoList() {
-  const [todos, setTodos] = useState([]);
-  const [item, setItem] = useState('');
+export function TodoList(): ReactElement {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [item, setItem] = useState<string>('');
 
   function addTodo() {
     setTodos([...todos, { id: nextId++, text: item, completed: false }]);
     setItem('');
   }
 
-  function removeTodo(id) {
+  function removeTodo(id: number) {
     setTodos((prevTodos) => prevTodos.filter((todo) => todo.id !== id));
   }
 
-  function toogleCompleted(id) {
+  function toogleCompleted(id: number) {
     setTodos((prevTodos) =>
       prevTodos.map((todo) =>
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
@@ -333,9 +351,19 @@ export function TodoList() {
  * - Should show boiling point message when appropriate
  */
 
+type Scales = 'c' | 'f';
+
 // Helper component for temperature input (DO NOT MODIFY)
-const TemperatureInput = ({ scale, temperature, onTemperatureChange }) => {
-  const handleChange = (e) => {
+const TemperatureInput = ({
+  scale,
+  temperature,
+  onTemperatureChange
+}: {
+  scale: string;
+  temperature: string;
+  onTemperatureChange: (value: string) => void;
+}): ReactElement => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     onTemperatureChange(e.target.value);
   };
 
@@ -349,24 +377,24 @@ const TemperatureInput = ({ scale, temperature, onTemperatureChange }) => {
   );
 };
 
-export function TemperatureConverter() {
-  const [temp, setTemp] = useState('');
-  const [scale, setScale] = useState('c');
+export function TemperatureConverter(): ReactElement {
+  const [temp, setTemp] = useState<string>('');
+  const [scale, setScale] = useState<Scales>('c');
 
-  function toFahrenheit(celsius) {
+  function toFahrenheit(celsius: string) {
     return ((Number(celsius) * 9) / 5 + 32).toString();
   }
 
-  function toCelsius(fahrenheit) {
-    return (((fahrenheit - 32) * 5) / 9).toString();
+  function toCelsius(fahrenheit: string) {
+    return (((Number(fahrenheit) - 32) * 5) / 9).toString();
   }
 
-  function handleCelsiusChange(value) {
+  function handleCelsiusChange(value: string) {
     setTemp(value);
     setScale('c');
   }
 
-  function handleFahrenheitChange(value) {
+  function handleFahrenheitChange(value: string) {
     setTemp(value);
     setScale('f');
   }
@@ -412,23 +440,31 @@ export function TemperatureConverter() {
  * - Should demonstrate action-based state updates
  */
 
-function reducer(state, action) {
+type ACTIONTYPE =
+  | { type: 'increment' }
+  | { type: 'decrement' }
+  | { type: 'set'; count: number }
+  | { type: 'reset' };
+
+const initialCountState = { count: 0 };
+
+function reducer(state: typeof initialCountState, action: ACTIONTYPE) {
   switch (action.type) {
     case 'increment':
       return { count: state.count + 1 };
     case 'decrement':
       return { count: state.count - 1 };
     case 'set':
-      return { count: Number(action.count) };
+      return { count: action.count };
     case 'reset':
       return { count: 0 };
     default:
-      throw new Error(`${action.type} not recognised`);
+      throw new Error(`Action not recognised`);
   }
 }
 
-export function ReducerCounter() {
-  const [state, dispatch] = useReducer(reducer, { count: 0 });
+export function ReducerCounter(): ReactElement {
+  const [state, dispatch] = useReducer(reducer, initialCountState);
 
   return (
     <>
@@ -441,7 +477,9 @@ export function ReducerCounter() {
         Set{' '}
         <input
           name="set"
-          onChange={(e) => dispatch({ type: 'set', count: e.target.value })}
+          onChange={(e) =>
+            dispatch({ type: 'set', count: Number(e.target.value) })
+          }
         />
       </label>
     </>
@@ -461,7 +499,23 @@ export function ReducerCounter() {
  * - Should allow clearing entire cart
  */
 
-function shoppingReducer(cart, action) {
+type ShoppingItem = {
+  id: number;
+  item: string;
+  quantity: number;
+  price: string;
+};
+
+type CartState = ShoppingItem[];
+
+type AddAction = { type: 'add' } & ShoppingItem;
+type RemoveAction = { type: 'remove' } & Pick<ShoppingItem, 'id'>;
+type UpdateAction = { type: 'update' } & Pick<ShoppingItem, 'id'> &
+  Partial<Omit<ShoppingItem, 'id'>>;
+type ResetAction = { type: 'reset' };
+type CartAction = AddAction | RemoveAction | UpdateAction | ResetAction;
+
+function shoppingReducer(cart: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'add':
       const existing = cart.find((c) => c.id === action.id);
@@ -489,9 +543,9 @@ function shoppingReducer(cart, action) {
         if (c.id === action.id) {
           return {
             id: action.id,
-            item: action.item,
-            quantity: action.quantity,
-            price: action.price
+            item: action.item || c.item,
+            quantity: action.quantity || c.quantity,
+            price: action.price || c.price
           };
         } else {
           return c;
@@ -500,11 +554,11 @@ function shoppingReducer(cart, action) {
     case 'reset':
       return [];
     default:
-      throw new Error(`${action.type} not recognised`);
+      throw new Error(`Action not recognised`);
   }
 }
 
-export function ShoppingCart() {
+export function ShoppingCart(): ReactElement {
   const [state, dispatch] = useReducer(shoppingReducer, []);
 
   // Calculate total price (ensure price is treated as a number)
@@ -620,6 +674,21 @@ export function ShoppingCart() {
  * - Should provide efficient data access patterns
  * - Should handle adding/removing data without deep mutations
  */
+type UserType = { id: string; name: string };
+type PostType = { id: string; userId: string; title: string; content: string };
+type CommentType = { id: string; postId: string; text: string };
+
+type BlogState = {
+  users: Record<string, UserType>;
+  posts: Record<string, PostType>;
+  comments: Record<string, CommentType>;
+};
+
+const initialState: BlogState = {
+  users: {},
+  posts: {},
+  comments: {}
+};
 
 const ADD_USER = 'ADD_USER';
 const ADD_POST = 'ADD_POST';
@@ -627,13 +696,38 @@ const ADD_COMMENT = 'ADD_COMMENT';
 const REMOVE_POST = 'REMOVE_POST';
 const REMOVE_COMMENT = 'REMOVE_COMMENT';
 
-const initialState = {
-  users: {},
-  posts: {},
-  comments: {}
+type AddUserAction = {
+  type: typeof ADD_USER;
+  payload: { id: string; name: string };
 };
+type AddPostAction = {
+  type: typeof ADD_POST;
+  payload: { id: string; userId: string; title: string; content: string };
+};
+type AddCommentAction = {
+  type: typeof ADD_COMMENT;
+  payload: {
+    id: string;
+    postId: string;
+    text: string;
+  };
+};
+type RemovePostAction = {
+  type: typeof REMOVE_POST;
+  payload: string;
+};
+type RemoveCommentAction = {
+  type: typeof REMOVE_COMMENT;
+  payload: string;
+};
+type BlogActions =
+  | AddUserAction
+  | AddPostAction
+  | AddCommentAction
+  | RemovePostAction
+  | RemoveCommentAction;
 
-function blogReducer(state, action) {
+function blogReducer(state: BlogState, action: BlogActions): BlogState {
   switch (action.type) {
     case ADD_USER:
       return {
@@ -687,30 +781,30 @@ function blogReducer(state, action) {
   }
 }
 
-export function BlogManager() {
+export function BlogManager(): ReactElement {
   const [state, dispatch] = useReducer(blogReducer, initialState);
 
   // Handlers
-  const addUser = (name) => {
+  const addUser = (name: string) => {
     const id = `user-${Date.now()}`;
     dispatch({ type: ADD_USER, payload: { id, name } });
   };
 
-  const addPost = (userId, title, content) => {
+  const addPost = (userId: string, title: string, content: string) => {
     const id = `post-${Date.now()}`;
     dispatch({ type: ADD_POST, payload: { id, userId, title, content } });
   };
 
-  const addComment = (postId, text) => {
+  const addComment = (postId: string, text: string) => {
     const id = `comment-${Date.now()}`;
     dispatch({ type: ADD_COMMENT, payload: { id, postId, text } });
   };
 
-  const removePost = (postId) => {
+  const removePost = (postId: string) => {
     dispatch({ type: REMOVE_POST, payload: postId });
   };
 
-  const removeComment = (commentId) => {
+  const removeComment = (commentId: string) => {
     dispatch({ type: REMOVE_COMMENT, payload: commentId });
   };
 
