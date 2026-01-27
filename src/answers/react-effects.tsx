@@ -9,15 +9,17 @@
  * - Subscription management
  * - Race condition handling
  * - Effect optimization
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  ReactElement,
+  FormEvent
+} from 'react';
 import { flushSync } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
@@ -37,7 +39,7 @@ import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
  * - Document title should update when title prop changes
  * - Effect should only run when title changes, not on every render
  */
-export function DocumentTitle({ title }) {
+export function DocumentTitle({ title }: { title: string }): ReactElement {
   useEffect(() => {
     document.title = title;
   }, [title]);
@@ -61,8 +63,8 @@ export function DocumentTitle({ title }) {
  * - State changes should not trigger the effect again
  * - Console should show mount message only once
  */
-export function MountLogger() {
-  const [count, setCount] = useState(0);
+export function MountLogger(): ReactElement {
+  const [count, setCount] = useState<number>(0);
 
   useEffect(() => {
     console.log('Component mounted');
@@ -93,10 +95,10 @@ export function MountLogger() {
  * - No memory leaks from uncleaned intervals
  * - Start/stop buttons should control the timer
  */
-export function Timer() {
-  const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef(null);
+export function Timer(): ReactElement {
+  const [seconds, setSeconds] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isRunning) {
@@ -106,7 +108,9 @@ export function Timer() {
     }
 
     return () => {
-      clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
       intervalRef.current = null;
     };
   }, [isRunning]);
@@ -131,7 +135,7 @@ export function Timer() {
  * - Should update dimensions when window is resized
  * - Should not have memory leaks from event listeners
  */
-export function WindowSizeTracker() {
+export function WindowSizeTracker(): ReactElement {
   const [windowSize, setWindowSize] = useState({
     width: window.innerWidth,
     height: window.innerHeight
@@ -169,7 +173,17 @@ export function WindowSizeTracker() {
  * - Should log search parameters when effect runs
  * - Should demonstrate proper dependency tracking
  */
-export function SearchResults({ searchTerm, filters, userId, theme }) {
+export function SearchResults({
+  searchTerm,
+  filters,
+  userId,
+  theme
+}: {
+  searchTerm: string;
+  filters: { category?: string };
+  userId: number;
+  theme: string;
+}): ReactElement {
   useEffect(() => {
     console.log(`Searching for ${searchTerm}`, filters);
   }, [searchTerm, filters]);
@@ -192,10 +206,10 @@ export function SearchResults({ searchTerm, filters, userId, theme }) {
  * - useEffect should fire asynchronously after paint
  * - Should be able to toggle between the two approaches
  */
-export function LayoutEffectDemo() {
-  const [show, setShow] = useState(true);
-  const [color, setColor] = useState('blue');
-  const [useLayout, setUseLayout] = useState(true);
+export function LayoutEffectDemo(): ReactElement {
+  const [show, setShow] = useState<boolean>(true);
+  const [color, setColor] = useState<string>('blue');
+  const [useLayout, setUseLayout] = useState<boolean>(true);
 
   const Effect = useLayout ? useLayoutEffect : useEffect;
 
@@ -239,10 +253,10 @@ export function LayoutEffectDemo() {
  * - Measurements should be available before paint
  * - Should re-measure when content changes
  */
-export function ElementMeasurer() {
+export function ElementMeasurer(): ReactElement {
   const [dimensions, setDimension] = useState({ width: 0, height: 0 });
-  const [content, setContent] = useState('Short');
-  const elementRef = useRef(null);
+  const [content, setContent] = useState<string>('Short');
+  const elementRef = useRef<HTMLParagraphElement>(null);
 
   useLayoutEffect(() => {
     // Check DOM element exists
@@ -284,10 +298,15 @@ export function ElementMeasurer() {
  * - Show error message when fetch fails
  * - Only fetch once on mount
  */
-export function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+type UserType = {
+  name: string;
+  email: string;
+};
+
+export function UserProfile({ userId }: { userId: number }): ReactElement {
+  const [user, setUser] = useState<UserType | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -300,7 +319,7 @@ export function UserProfile({ userId }) {
         const userData = await response.json();
         setUser(userData);
       } catch (err) {
-        setError(err.message);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -342,10 +361,17 @@ export function UserProfile({ userId }) {
  * - Refetch when page changes
  * - Show loading state during refetch
  */
-export function PostList({ category, page }) {
+
+export function PostList({
+  category,
+  page
+}: {
+  category: string;
+  page: number;
+}): ReactElement {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -360,7 +386,7 @@ export function PostList({ category, page }) {
         const postData = await response.json();
         setPosts(postData);
       } catch (err) {
-        setError(err.message);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -402,10 +428,10 @@ export function PostList({ category, page }) {
  * - Should not update state if request was cancelled
  * - Should handle abort errors gracefully
  */
-export function SearchableList() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
+export function SearchableList(): ReactElement {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [results, setResults] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (!searchTerm) {
@@ -423,10 +449,15 @@ export function SearchableList() {
           signal: controller.signal
         });
         const searchData = await response.json();
+
         setResults(searchData);
       } catch (err) {
-        if (error.name !== 'AbortError') {
-          console.error('Search failed:', error);
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          (err as { name?: string }).name !== 'AbortError'
+        ) {
+          console.error('Search failed:', err);
         }
       } finally {
         setLoading(false);
@@ -473,9 +504,13 @@ export function SearchableList() {
  * - Clean up connection on unmount
  * - Handle connection failures gracefully
  */
-export function LiveChat({ roomId }) {
-  const [messages, setMessages] = useState([]);
-  const [error, setError] = useState(null);
+type MessageType = {
+  text: string;
+};
+
+export function LiveChat({ roomId }: { roomId: string }): ReactElement {
+  const [messages, setMessages] = useState<MessageType[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const ws = new WebSocket(`wss://example.com/chat/${roomId}`);
@@ -529,23 +564,22 @@ export function LiveChat({ roomId }) {
  * - Clean up all subscriptions properly
  * - Handle subscription errors
  */
-export function MultiSubscriber() {
-  // TODO: Implement multiple event subscriptions
+export function MultiSubscriber(): ReactElement {
   const [eventData, setEventData] = useState({
     mouse: { x: 0, y: 0 },
-    key: null,
+    key: '',
     scroll: 0
   });
 
   useEffect(() => {
-    const handleMouseMove = (event) => {
+    const handleMouseMove = (event: MouseEvent) => {
       setEventData((prev) => ({
         ...prev,
         mouse: { x: event.clientX, y: event.clientY }
       }));
     };
 
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       setEventData((prev) => ({
         ...prev,
         key: event.key
@@ -599,14 +633,15 @@ export function MultiSubscriber() {
  * - Only the latest request should update the UI
  * - Should handle component unmounting during async operations
  */
-export function StaleClosurePrevention() {
-  const [data, setData] = useState(null);
-  const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+export function StaleClosurePrevention(): ReactElement {
+  const [data, setData] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [query, setQuery] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!query) return;
+    if (!inputValue) return;
 
     const controller = new AbortController(); // Create an AbortController instance
     const signal = controller.signal;
@@ -629,8 +664,10 @@ export function StaleClosurePrevention() {
       } catch (err) {
         if (signal.aborted) {
           console.log('Fetch aborted');
+        } else if (err && typeof err === 'object' && 'message' in err) {
+          setError((err as { message: string }).message);
         } else {
-          setError(err.message);
+          setError('An unknown error occurred');
         }
       } finally {
         if (!signal.aborted) {
@@ -644,12 +681,12 @@ export function StaleClosurePrevention() {
     return () => {
       controller.abort(); // Abort the fetch request on cleanup
     };
-  }, [query]);
+  }, [inputValue]);
 
-  function submitQuery(e) {
-    e.preventDefault();
+  function submitQuery(evt: FormEvent<HTMLFormElement>) {
+    evt.preventDefault();
 
-    setQuery(e.target.value);
+    setQuery(inputValue);
   }
 
   return (
@@ -657,8 +694,8 @@ export function StaleClosurePrevention() {
       <form onSubmit={submitQuery}>
         <input
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           placeholder="Enter query"
         />
         <button type="submit">Submit</button>
@@ -682,7 +719,7 @@ export function StaleClosurePrevention() {
  * - Should invalidate cache when needed
  * - Should handle cache expiration
  */
-export function RequestDeduplication() {
+export function RequestDeduplication(): ReactElement {
   const [query, setQuery] = useState('');
 
   const { isFetching, isError, data, error } = useQuery({
@@ -728,7 +765,17 @@ export function RequestDeduplication() {
  * - Should use memoization to prevent unnecessary recalculations
  * - Should show performance improvements
  */
-export function ExpensiveEffect({ data, filters, settings }) {
+type ExpensiveData = {
+  value: number;
+};
+
+export function ExpensiveEffect({
+  data,
+  filters
+}: {
+  data: ExpensiveData[];
+  filters: Function[];
+}): ReactElement {
   // Memoize the filtered data to avoid unnecessary recalculations
   const filteredData = useMemo(() => {
     console.log('Filtering data...');
@@ -772,10 +819,10 @@ export function ExpensiveEffect({ data, filters, settings }) {
  * - Should show loading states appropriately
  * - Should handle empty search terms
  */
-export function DebouncedSearch() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+export function DebouncedSearch(): ReactElement {
+  const [data, setData] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const controller = useRef(new AbortController());
 
   const handleSearch = useDebouncedCallback(
@@ -797,12 +844,14 @@ export function DebouncedSearch() {
         }
 
         const result = await response.json();
-        setData(result); // Update state with the fetched data
+        setData(result);
       } catch (err) {
         if (controller.current.signal.aborted) {
           console.log('Fetch aborted');
+        } else if (err && typeof err === 'object' && 'message' in err) {
+          setError((err as { message: string }).message);
         } else {
-          setError(err.message);
+          setError('An unknown error occurred');
         }
       } finally {
         if (!controller.current.signal.aborted) {
@@ -819,7 +868,7 @@ export function DebouncedSearch() {
       <input
         id="search"
         name="search"
-        tyoe="text"
+        type="text"
         onChange={(e) => handleSearch(e.target.value)}
       />
       {loading && <p>Loading...</p>}
@@ -827,7 +876,7 @@ export function DebouncedSearch() {
       {data.length > 0 && (
         <ul>
           {data.map((item, index) => (
-            <li key={index}>{item.name}</li>
+            <li key={index}>{item}</li>
           ))}
         </ul>
       )}
@@ -847,10 +896,10 @@ export function DebouncedSearch() {
  * - Should minimize DOM updates
  * - Should demonstrate flushSync when needed
  */
-export function BatchedEffects() {
-  const [one, setOne] = useState('');
-  const [two, setTwo] = useState('');
-  const [three, setThree] = useState('');
+export function BatchedEffects(): ReactElement {
+  const [one, setOne] = useState<string>('');
+  const [two, setTwo] = useState<string>('');
+  const [three, setThree] = useState<string>('');
 
   // React batches state updates triggered by event handlers
   // to minimize re-renders and improve performance.
@@ -903,7 +952,10 @@ export function BatchedEffects() {
  * - Should prevent memory leaks
  * - Should be composable with other hooks
  */
-export function useAsyncEffect(asyncFunction, dependencies) {
+export function useAsyncEffect(
+  asyncFunction: Function,
+  dependencies: string[]
+) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: dependencies,
     queryFn: async () => {
@@ -929,7 +981,7 @@ export function useAsyncEffect(asyncFunction, dependencies) {
 /**
  * Component demonstrating the custom hook usage
  */
-export function AsyncEffectDemo() {
+export function AsyncEffectDemo(): ReactElement {
   const fetchData = async () => {
     const response = await fetch('https://jsonplaceholder.typicode.com/posts');
     if (!response.ok) {

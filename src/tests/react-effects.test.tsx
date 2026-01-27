@@ -27,7 +27,7 @@ import {
   BatchedEffects,
   useAsyncEffect,
   AsyncEffectDemo
-} from '../exercises/react-effects';
+} from '../answers/react-effects';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a QueryClient instance
@@ -37,16 +37,16 @@ const queryClient = new QueryClient();
 const originalTitle = document.title;
 const originalAddEventListener = window.addEventListener;
 const originalRemoveEventListener = window.removeEventListener;
-const originalSetTimeout = global.setTimeout;
-const originalClearTimeout = global.clearTimeout;
-const originalSetInterval = global.setInterval;
-const originalClearInterval = global.clearInterval;
+const originalSetTimeout = globalThis.setTimeout;
+const originalClearTimeout = globalThis.clearTimeout;
+const originalSetInterval = globalThis.setInterval;
+const originalClearInterval = globalThis.clearInterval;
 
 // Mock fetch globally
-global.fetch = vi.fn();
+globalThis.fetch = vi.fn();
 
 // Mock WebSocket
-global.WebSocket = vi.fn(() => ({
+globalThis.WebSocket = vi.fn(() => ({
   send: vi.fn(),
   close: vi.fn(),
   addEventListener: vi.fn(),
@@ -77,10 +77,10 @@ afterEach(() => {
   // vi.clearAllTimers();
 
   // Restore original timer functions
-  global.setTimeout = originalSetTimeout;
-  global.clearTimeout = originalClearTimeout;
-  global.setInterval = originalSetInterval;
-  global.clearInterval = originalClearInterval;
+  globalThis.setTimeout = originalSetTimeout;
+  globalThis.clearTimeout = originalClearTimeout;
+  globalThis.setInterval = originalSetInterval;
+  globalThis.clearInterval = originalClearInterval;
 });
 
 // =============================================================================
@@ -156,11 +156,11 @@ describe('Exercise 1: useEffect Hook Patterns', () => {
 describe('Exercise 2: Effect Dependencies and Cleanup', () => {
   describe('Timer', () => {
     beforeEach(() => {
-      vi.useFakeTimers();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
     });
 
     afterEach(() => {
-      vi.restoreAllMocks();
+      vi.useRealTimers();
     });
 
     it('should display initial timer value', () => {
@@ -214,9 +214,14 @@ describe('Exercise 2: Effect Dependencies and Cleanup', () => {
       );
     });
 
-    it('should clean up timer on unmount', () => {
-      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+    it('should clean up timer on unmount', async () => {
+      const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval');
+      const user = userEvent.setup();
       const { unmount } = render(<Timer />);
+
+      // Start the timer so the interval is set
+      const startButton = screen.getByRole('button', { name: /start/i });
+      await user.click(startButton);
 
       unmount();
 
@@ -592,12 +597,13 @@ describe('Exercise 4: Data Fetching Patterns', () => {
 
   describe('SearchableList', () => {
     beforeEach(() => {
-      vi.useFakeTimers();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
       fetch.mockClear();
     });
 
     afterEach(() => {
-      vi.restoreAllMocks();
+      vi.useRealTimers();
+      // vi.restoreAllMocks();
     });
 
     it('should render search input', () => {
@@ -638,10 +644,10 @@ describe('Exercise 4: Data Fetching Patterns', () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       const mockAbort = vi.fn();
 
-      global.AbortController = vi.fn(() => ({
-        signal: { aborted: false },
-        abort: mockAbort
-      }));
+      globalThis.AbortController = class {
+        signal = { aborted: false };
+        abort = mockAbort;
+      };
 
       render(<SearchableList />);
       const input = screen.getByRole('textbox');
@@ -683,7 +689,7 @@ describe('Exercise 5: Subscription Management', () => {
         removeEventListener: vi.fn(),
         readyState: 1
       };
-      global.WebSocket = vi.fn(function () {
+      globalThis.WebSocket = vi.fn(function () {
         return mockWebSocket;
       });
     });
@@ -776,7 +782,7 @@ describe('Exercise 6: Race Condition Handling', () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    // vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
