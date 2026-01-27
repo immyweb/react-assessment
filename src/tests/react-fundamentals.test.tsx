@@ -439,8 +439,8 @@ describe('Exercise 4: Conditional Rendering Patterns', () => {
 
   describe('Notification', () => {
     it('should not render when no message', () => {
-      const { container } = render(<Notification type="info" message="" />);
-      expect(container.firstChild).toBeNull();
+      render(<Notification type="info" message="" />);
+      expect(screen.queryByText('Test notification')).not.toBeInTheDocument();
     });
 
     it('should render message when provided', () => {

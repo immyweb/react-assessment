@@ -9,12 +9,6 @@
  * - Lists and keys
  * - Component composition patterns
  * - Controlled vs uncontrolled components
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import React, {
@@ -22,9 +16,12 @@ import React, {
   useEffect,
   createContext,
   useContext,
-  useRef
+  useRef,
+  ReactElement,
+  KeyboardEvent,
+  MouseEvent,
+  FormEvent
 } from 'react';
-import PropTypes from 'prop-types';
 
 // =============================================================================
 // EXERCISE 1: Component Creation and JSX
@@ -38,7 +35,7 @@ import PropTypes from 'prop-types';
  * Expected JSX output:
  * <h1 className="welcome">Welcome to React!</h1>
  */
-export function WelcomeMessage() {
+export function WelcomeMessage(): ReactElement {
   return <h1 className="welcome">Welcome to React!</h1>;
 }
 
@@ -55,7 +52,13 @@ export function WelcomeMessage() {
  *   <p>Email: {user.email}</p>
  * </div>
  */
-export function UserCard({ user }) {
+type UserType = {
+  name: string;
+  age: number;
+  email: string;
+};
+
+export function UserCard({ user }: { user: UserType }): ReactElement {
   return (
     <div className="user-card">
       <h2>{user.name}</h2>
@@ -85,7 +88,12 @@ export function CustomButton({
   variant = 'primary',
   disabled = false,
   onClick
-}) {
+}: {
+  text: string;
+  variant: string;
+  disabled: boolean;
+  onClick: () => void;
+}): ReactElement {
   return (
     <button
       onClick={onClick}
@@ -103,9 +111,21 @@ export function CustomButton({
  * Should validate all prop types using PropTypes
  * Should display product information in a card format
  */
-export function ProductCard({ id, name, price, description, inStock = true }) {
+export function ProductCard({
+  id,
+  name,
+  price,
+  description,
+  inStock = true
+}: {
+  id: number;
+  name: string;
+  price: number;
+  description?: string;
+  inStock?: boolean;
+}): ReactElement {
   return (
-    <div id={id}>
+    <div id={`${id}`}>
       <h2>{name}</h2>
       <p>{price}</p>
       <p>{description}</p>
@@ -113,15 +133,6 @@ export function ProductCard({ id, name, price, description, inStock = true }) {
     </div>
   );
 }
-
-// TODO: Add PropTypes validation for ProductCard
-ProductCard.propTypes = {
-  id: PropTypes.number.isRequired,
-  name: PropTypes.string.isRequired,
-  price: PropTypes.number.isRequired,
-  description: PropTypes.string,
-  inStock: PropTypes.bool
-};
 
 // =============================================================================
 // EXERCISE 3: Event Handling and Synthetic Events
@@ -134,8 +145,8 @@ ProductCard.propTypes = {
  * Should handle button clicks to update the count
  * Should prevent negative counts (minimum 0)
  */
-export function Counter() {
-  const [count, setCount] = useState(0);
+export function Counter(): ReactElement {
+  const [count, setCount] = useState<number>(0);
 
   function onIncrement() {
     setCount(count + 1);
@@ -164,8 +175,8 @@ export function Counter() {
  * Should prevent default form submission
  * Should display current form state
  */
-export function ContactForm() {
-  function onSubmit(formData) {}
+export function ContactForm(): ReactElement {
+  function onSubmit(formData: FormData) {}
 
   return (
     <form action={onSubmit} role="form">
@@ -192,8 +203,16 @@ export function ContactForm() {
  * Should display event information (type, target, coordinates for mouse events)
  * Should handle keyboard events and display key pressed
  */
-export function EventDemo() {
-  const [mouseEvt, setMouseEvt] = useState({
+type MouseEvtState = {
+  type: string;
+  coordinates: {
+    x: number;
+    y: number;
+  };
+};
+
+export function EventDemo(): ReactElement {
+  const [mouseEvt, setMouseEvt] = useState<MouseEvtState>({
     type: '',
     coordinates: {
       x: 0,
@@ -204,14 +223,14 @@ export function EventDemo() {
     keyPressed: ''
   });
 
-  function onMouseEvent(evt) {
+  function onMouseEvent(evt: MouseEvent<HTMLButtonElement>) {
     setMouseEvt({
       type: evt.type,
       coordinates: { x: evt.clientX, y: evt.clientY }
     });
   }
 
-  function onKeyBoardEvent(evt) {
+  function onKeyBoardEvent(evt: KeyboardEvent<HTMLInputElement>) {
     setKeyboardEvt({ keyPressed: evt.key });
   }
 
@@ -248,8 +267,14 @@ export function EventDemo() {
  * Should show welcome message if logged in, login prompt if not
  * Should use ternary operator for conditional rendering
  */
-export function AuthStatus({ isLoggedIn, username }) {
-  function Welcome({ username }) {
+export function AuthStatus({
+  isLoggedIn,
+  username
+}: {
+  isLoggedIn: boolean;
+  username: string;
+}): ReactElement {
+  function Welcome({ username }: { username: string }) {
     return <h1>Welcome {username}</h1>;
   }
 
@@ -268,7 +293,15 @@ export function AuthStatus({ isLoggedIn, username }) {
  * Should show data when available
  * Should show "No data" when data is empty array
  */
-export function LoadingState({ loading, error, data }) {
+export function LoadingState({
+  loading,
+  error,
+  data
+}: {
+  loading: boolean;
+  error: string;
+  data: string[];
+}): ReactElement {
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -278,7 +311,13 @@ export function LoadingState({ loading, error, data }) {
   }
 
   if (data && data.length > 0) {
-    return data.map((item) => <div>{item}</div>);
+    return (
+      <ul>
+        {data.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    );
   } else {
     return <h3>No data</h3>;
   }
@@ -291,15 +330,27 @@ export function LoadingState({ loading, error, data }) {
  * Should show dismiss button only if dismissible=true
  * Should apply different styles based on type
  */
-export function Notification({ type, message, dismissible, onDismiss }) {
+export function Notification({
+  type,
+  message,
+  dismissible,
+  onDismiss
+}: {
+  type: string;
+  message: string;
+  dismissible: boolean;
+  onDismiss: () => void;
+}): ReactElement {
   if (message) {
     return (
       <div className={type}>
         <h3>{message}</h3>
-        {dismissible ? <button onClick={onDismiss}></button> : ''}
+        {dismissible && <button onClick={onDismiss}></button>}
       </div>
     );
   }
+
+  return <div></div>;
 }
 
 // =============================================================================
@@ -313,7 +364,13 @@ export function Notification({ type, message, dismissible, onDismiss }) {
  * Should use proper keys for list items
  * Should show completed todos with strikethrough
  */
-export function TodoList({ todos }) {
+type TodoType = {
+  id: number;
+  text: boolean;
+  completed: boolean;
+};
+
+export function TodoList({ todos }: { todos: TodoType[] }): ReactElement {
   return (
     <ul>
       {todos.map(({ id, text, completed }) => {
@@ -337,14 +394,21 @@ export function TodoList({ todos }) {
  * Should display total price
  * Should use proper keys and handle list updates
  */
-let nextId = 0;
-export function ShoppingCart() {
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [items, setItems] = useState([]);
+type CartItem = {
+  id: number;
+  name: string;
+  price: string;
+};
 
-  const totalPrice = items.reduce((acc, i) => {
-    return acc + i.price;
+let nextId = 0;
+
+export function ShoppingCart(): ReactElement {
+  const [name, setName] = useState<string>('');
+  const [price, setPrice] = useState<string>('');
+  const [items, setItems] = useState<CartItem[]>([]);
+
+  const totalPrice: number = items.reduce((acc, i) => {
+    return acc + Number(i.price);
   }, 0);
 
   return (
@@ -386,10 +450,7 @@ export function ShoppingCart() {
         </label>
         <button
           onClick={() => {
-            setItems([
-              ...items,
-              { id: nextId++, name: name, price: Number(price) }
-            ]);
+            setItems([...items, { id: nextId++, name: name, price: price }]);
           }}>
           Add
         </button>
@@ -405,16 +466,31 @@ export function ShoppingCart() {
  * Should use proper keys for both levels
  * Should be collapsible (show/hide items)
  */
-export function CategoryList({ categories }) {
+type CategoryType = {
+  id: number;
+  name: string;
+  items: ItemType[];
+};
+
+type ItemType = {
+  id: number;
+  name: string;
+};
+
+export function CategoryList({
+  categories
+}: {
+  categories: CategoryType[];
+}): ReactElement {
   // Track open/closed state for each category by id
-  const [openIds, setOpenIds] = useState(() =>
-    categories.reduce((acc, category) => {
+  const [openIds, setOpenIds] = useState<Record<number, boolean>>(() =>
+    categories.reduce<Record<number, boolean>>((acc, category) => {
       acc[category.id] = true;
       return acc;
     }, {})
   );
 
-  function toggleItems(categoryId) {
+  function toggleItems(categoryId: number) {
     setOpenIds((prev) => ({
       ...prev,
       [categoryId]: !prev[categoryId]
@@ -454,7 +530,13 @@ export function CategoryList({ categories }) {
  * Should render title in header and children in body
  * Should provide consistent styling structure
  */
-export function Card({ title, children }) {
+export function Card({
+  title,
+  children
+}: {
+  title: string;
+  children: React.ReactNode;
+}): ReactElement {
   return (
     <>
       <h1>{title}</h1>
@@ -470,10 +552,20 @@ export function Card({ title, children }) {
  * Should call render prop with { data, loading, error }
  * Should simulate API call with setTimeout
  */
-export function DataFetcher({ url, render }) {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+export function DataFetcher({
+  url,
+  render
+}: {
+  url: string;
+  render: (args: {
+    loading: boolean;
+    data: {} | null;
+    error: string | null;
+  }) => React.ReactNode;
+}): ReactElement {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [data, setData] = useState<{ some: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Reset state
@@ -487,7 +579,7 @@ export function DataFetcher({ url, render }) {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err);
+        setError(err instanceof Error ? err.message : String(err));
         setLoading(false);
       });
   }, [url]);
@@ -514,10 +606,22 @@ export function DataFetcher({ url, render }) {
     </TabPanels>
   </Tabs>
  */
-const TabContext = createContext();
+type TabContextType = {
+  activeTab: number;
+  setActiveTab: (index: number) => void;
+};
 
-export function Tabs({ children }) {
-  const [activeTab, setActiveTab] = useState(0);
+const TabContext = createContext<TabContextType>({
+  activeTab: 0,
+  setActiveTab: () => {}
+});
+
+export function Tabs({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
+  const [activeTab, setActiveTab] = useState<number>(0);
 
   return (
     <TabContext.Provider value={{ activeTab, setActiveTab }}>
@@ -526,12 +630,23 @@ export function Tabs({ children }) {
   );
 }
 
-export function TabList({ children }) {
+export function TabList({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
   return <div>{children}</div>;
 }
 
-export function Tab({ children, index }) {
-  const { activeTab, setActiveTab } = useContext(TabContext);
+export function Tab({
+  children,
+  index
+}: {
+  children: React.ReactNode;
+  index: number;
+}): ReactElement {
+  const context = useContext(TabContext);
+  const { activeTab, setActiveTab } = context;
 
   return (
     <button
@@ -542,12 +657,22 @@ export function Tab({ children, index }) {
   );
 }
 
-export function TabPanels({ children }) {
+export function TabPanels({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
   const { activeTab } = useContext(TabContext);
   return <div>{React.Children.toArray(children)[activeTab]}</div>;
 }
 
-export function TabPanel({ children, index }) {
+export function TabPanel({
+  children,
+  index
+}: {
+  children: React.ReactNode;
+  index: number;
+}): ReactElement {
   return <>{children}</>;
 }
 
@@ -562,13 +687,24 @@ export function TabPanel({ children, index }) {
  * Should show validation errors
  * Should handle different input types
  */
+type ValidationType = {
+  isValid: boolean;
+  error: string;
+};
+
 export function ControlledInput({
   value,
   onChange,
   placeholder,
   validation,
   type = 'text'
-}) {
+}: {
+  value: string;
+  onChange: () => void;
+  placeholder: string;
+  validation: ValidationType;
+  type: string;
+}): ReactElement {
   return (
     <>
       <input
@@ -593,13 +729,19 @@ export function ControlledInput({
  * Should allow setting default value
  * Should expose ref via forwardRef
  */
-export const UncontrolledInput = React.forwardRef(
-  ({ defaultValue, placeholder }, ref) => {
-    return (
-      <input defaultValue={defaultValue} placeholder={placeholder} ref={ref} />
-    );
-  }
-);
+type UncontrolledInputProps = {
+  defaultValue?: string;
+  placeholder?: string;
+};
+
+export const UncontrolledInput = React.forwardRef<
+  HTMLInputElement,
+  UncontrolledInputProps
+>(({ defaultValue, placeholder }, ref): ReactElement => {
+  return (
+    <input defaultValue={defaultValue} placeholder={placeholder} ref={ref} />
+  );
+});
 
 /**
  * Create a form that demonstrates both controlled and uncontrolled patterns.
@@ -608,15 +750,17 @@ export const UncontrolledInput = React.forwardRef(
  * Should handle form submission for both types
  * Should show current values from both approaches
  */
-export function HybridForm() {
+export function HybridForm(): ReactElement {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
 
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  function onSubmit(evt) {
+  function onSubmit(evt: FormEvent<HTMLFormElement>) {
     evt.preventDefault();
-    setAge(inputRef.current.value);
+    if (inputRef.current) {
+      setAge(inputRef.current.value);
+    }
   }
 
   return (
@@ -644,15 +788,15 @@ export function HybridForm() {
 /**
  * Helper component for demonstration purposes
  */
-export const LoadingSpinner = () => (
+export const LoadingSpinner = (): ReactElement => (
   <div className="loading-spinner">Loading...</div>
 );
 
 /**
  * Helper function to simulate API calls
  */
-export const simulateApiCall = (data, delay = 1000) => {
+export function simulateApiCall<T>(data: T, delay = 1000): Promise<T> {
   return new Promise((resolve) => {
     setTimeout(() => resolve(data), delay);
   });
-};
+}

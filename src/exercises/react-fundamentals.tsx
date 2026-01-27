@@ -9,16 +9,19 @@
  * - Lists and keys
  * - Component composition patterns
  * - Controlled vs uncontrolled components
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  useRef,
+  ReactElement,
+  KeyboardEvent,
+  MouseEvent,
+  FormEvent
+} from 'react';
 
 // =============================================================================
 // EXERCISE 1: Component Creation and JSX
@@ -87,11 +90,6 @@ export function CustomButton({
 export function ProductCard({ id, name, price, description, inStock = true }) {
   // TODO: Implement this component
 }
-
-// TODO: Add PropTypes validation for ProductCard
-ProductCard.propTypes = {
-  // TODO: Define prop types
-};
 
 // =============================================================================
 // EXERCISE 3: Event Handling and Synthetic Events
@@ -328,8 +326,8 @@ export const LoadingSpinner = () => (
 /**
  * Helper function to simulate API calls
  */
-export const simulateApiCall = (data, delay = 1000) => {
+export function simulateApiCall<T>(data: T, delay = 1000): Promise<T> {
   return new Promise((resolve) => {
     setTimeout(() => resolve(data), delay);
   });
-};
+}
