@@ -4,7 +4,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 
 ## Topics covered
 
-### 1. Core React Concepts (react-fundamentals.jsx)
+### 1. Core React Concepts (react-fundamentals.tsx)
 
 - Component creation and JSX ✅
 - Props and prop validation ✅
@@ -14,7 +14,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Component composition patterns ✅
 - Controlled vs uncontrolled components ✅
 
-### 2. State Management (react-state.jsx)
+### 2. State Management (react-state.tsx)
 
 - useState hook fundamentals ✅
 - State updates and batching ✅
@@ -24,7 +24,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - useReducer for complex state ✅
 - State normalization techniques ✅
 
-### 3. Effects and Side Effects (react-effects.jsx)
+### 3. Effects and Side Effects (react-effects.tsx)
 
 - useEffect hook patterns ✅
 - Effect dependencies and cleanup ✅
@@ -34,7 +34,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Race condition handling ✅
 - Effect optimization ✅
 
-### 4. Context and Global State (react-context.jsx)
+### 4. Context and Global State (react-context.tsx)
 
 - createContext and useContext ✅
 - Context provider patterns ✅
@@ -85,8 +85,8 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 
 ### 9. Forms and Validation (react-forms-adv.jsx)
 
-- Dynamic form generation ❌
-- File upload handling ❌
+- Dynamic form generation ✅
+- File upload handling ✅
 - Form state management ❌
 - Custom form hooks ❌
 

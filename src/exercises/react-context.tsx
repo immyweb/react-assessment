@@ -9,14 +9,16 @@
  *
  * Each exercise focuses on practical, real-world use cases of React Context.
  */
-
-import React, {
+import {
   createContext,
   useContext,
   useState,
   useReducer,
   useMemo,
-  useCallback
+  useEffect,
+  useCallback,
+  ReactElement,
+  FormEvent
 } from 'react';
 
 // =============================================================================

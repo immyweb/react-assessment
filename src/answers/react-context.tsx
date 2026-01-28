@@ -6,17 +6,17 @@
  * - Context provider patterns with useReducer
  * - Avoiding prop drilling
  * - Context optimization techniques
- *
- * Each exercise focuses on practical, real-world use cases of React Context.
  */
-
 import {
   createContext,
   useContext,
   useState,
   useReducer,
   useMemo,
-  useEffect
+  useEffect,
+  useCallback,
+  ReactElement,
+  FormEvent
 } from 'react';
 
 // =============================================================================
@@ -31,19 +31,28 @@ import {
  * - useTheme should return current theme from context
  * - ThemedButton should apply the theme styles
  */
+type ThemeContextType = {
+  name: string;
+  toggleTheme: () => void;
+};
 
-export const ThemeContext = createContext();
+export const ThemeContext = createContext<ThemeContextType>({
+  name: 'dark',
+  toggleTheme: () => {}
+});
 
-export function ThemeProvider({ children, theme: initialTheme }) {
-  const [theme, setTheme] = useState(
-    initialTheme || { name: 'dark', color: '#000' }
-  );
+export function ThemeProvider({
+  children,
+  theme: initialTheme
+}: {
+  children: React.ReactNode;
+  theme: { name: string };
+}) {
+  const [theme, setTheme] = useState(initialTheme || { name: 'dark' });
 
   const toggleTheme = () => {
     setTheme((prev) =>
-      prev.name === 'dark'
-        ? { name: 'light', color: '#fff' }
-        : { name: 'dark', color: '#000' }
+      prev.name === 'dark' ? { name: 'light' } : { name: 'dark' }
     );
   };
 
@@ -64,13 +73,16 @@ export function useTheme() {
   return context;
 }
 
-export function ThemedButton({ children }) {
-  const { toggleTheme, theme } = useTheme();
+export function ThemedButton({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
+  const { name, toggleTheme } = useTheme();
   const style =
-    theme === 'dark'
+    name === 'dark'
       ? { background: '#222', color: '#fff' }
       : { background: '#fff', color: '#222' };
-
   return (
     <button style={style} onClick={toggleTheme}>
       {children}
@@ -86,14 +98,30 @@ export function ThemedButton({ children }) {
  * - Should provide login/logout methods
  * - UserProfile should display the current user's information
  */
+type UserContextType = {
+  loading: boolean;
+  user: UserType | null;
+  login: (user: UserType) => void;
+  logout: () => void;
+};
 
-export const UserContext = createContext();
+type UserType = {
+  name: string;
+  email?: string;
+};
 
-export function UserProvider({ children }) {
-  const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(null);
+export const UserContext = createContext<UserContextType>({
+  loading: false,
+  user: null,
+  login: () => {},
+  logout: () => {}
+});
 
-  function login(person) {
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<UserType | null>(null);
+
+  function login(person: UserType) {
     setLoading(true);
     setUser({ name: person.name, email: person.email });
     setLoading(false);
@@ -118,12 +146,12 @@ export function useUser() {
   return context;
 }
 
-export function UserProfile() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+export function UserProfile(): ReactElement {
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
   const { login, logout, loading, user } = useUser();
 
-  function onSubmit(evt) {
+  function onSubmit(evt: FormEvent) {
     evt.preventDefault();
     login({ name, email });
   }
@@ -169,21 +197,29 @@ export function UserProfile() {
  * - Should provide actions for adding and removing items
  */
 
-const CART_ACTIONS = {
-  ADD_ITEM: 'ADD_ITEM',
-  REMOVE_ITEM: 'REMOVE_ITEM',
-  UPDATE_ITEM: 'UPDATE_ITEM',
-  CLEAR_CART: 'CLEAR_CART'
+const ADD_ITEM = 'ADD_ITEM';
+const REMOVE_ITEM = 'REMOVE_ITEM';
+const UPDATE_ITEM = 'UPDATE_ITEM';
+const CLEAR_CART = 'CLEAR_CART';
+
+type ItemType = {
+  id: number;
+  item: string;
+  quantity: number;
+  price: string;
 };
 
-// id
-// item
-// quantity
-// price
+type CartState = ItemType[];
 
-function cartReducer(state, action) {
+type AddAction = { type: typeof ADD_ITEM } & ItemType;
+type RemoveAction = { type: typeof REMOVE_ITEM } & Pick<ItemType, 'id'>;
+type UpdateAction = { type: typeof UPDATE_ITEM } & ItemType;
+type ClearAction = { type: typeof CLEAR_CART };
+type CartAction = AddAction | RemoveAction | UpdateAction | ClearAction;
+
+function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case CART_ACTIONS.ADD_ITEM:
+    case ADD_ITEM:
       const existing = state.find((c) => c.id === action.id);
       if (existing) {
         return state.map((c) =>
@@ -202,9 +238,9 @@ function cartReducer(state, action) {
           }
         ];
       }
-    case CART_ACTIONS.REMOVE_ITEM:
+    case REMOVE_ITEM:
       return state.filter((c) => c.id !== action.id);
-    case CART_ACTIONS.UPDATE_ITEM:
+    case UPDATE_ITEM:
       return state.map((c) => {
         if (c.id === action.id) {
           return {
@@ -217,16 +253,37 @@ function cartReducer(state, action) {
           return c;
         }
       });
-    case CART_ACTIONS.CLEAR_CART:
+    case CLEAR_CART:
       return [];
     default:
-      throw new Error(`${action.type} not recognised`);
+      throw new Error(`Action not recognised`);
   }
 }
 
-export const CartContext = createContext();
+type CartContextType = {
+  cart: CartState;
+  total: number;
+  addItem: (id: number, item: string, quantity: number, price: string) => void;
+  removeItem: (id: number) => void;
+  updateItem: (
+    id: number,
+    item: string,
+    quantity: number,
+    price: string
+  ) => void;
+  clearCart: () => void;
+};
 
-export function CartProvider({ children }) {
+export const CartContext = createContext<CartContextType>({
+  cart: [],
+  total: 0,
+  addItem: () => {},
+  removeItem: () => {},
+  updateItem: () => {},
+  clearCart: () => {}
+});
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, dispatch] = useReducer(cartReducer, []);
 
   const total = useMemo(() => {
@@ -236,20 +293,25 @@ export function CartProvider({ children }) {
     );
   }, [cart]);
 
-  function addItem(id, item, price, quantity) {
-    dispatch({ type: CART_ACTIONS.ADD_ITEM, item, price, quantity, id });
+  function addItem(id: number, item: string, quantity: number, price: string) {
+    dispatch({ type: ADD_ITEM, item, price, quantity, id });
   }
 
-  function removeItem(id) {
-    dispatch({ type: CART_ACTIONS.REMOVE_ITEM, id });
+  function removeItem(id: number) {
+    dispatch({ type: REMOVE_ITEM, id });
   }
 
-  function updateItem(id, item, price, quantity) {
-    dispatch({ type: CART_ACTIONS.UPDATE_ITEM, item, price, quantity, id });
+  function updateItem(
+    id: number,
+    item: string,
+    quantity: number,
+    price: string
+  ) {
+    dispatch({ type: UPDATE_ITEM, item, price, quantity, id });
   }
 
   function clearCart() {
-    dispatch({ type: CART_ACTIONS.CLEAR_CART });
+    dispatch({ type: CLEAR_CART });
   }
 
   return (
@@ -266,7 +328,7 @@ export function useCart() {
   return context;
 }
 
-export function ShoppingCart() {
+export function ShoppingCart(): ReactElement {
   const { cart, total, clearCart, removeItem } = useCart();
 
   return (
@@ -303,7 +365,11 @@ export function ShoppingCart() {
   );
 }
 
-export function ProductCard({ product }) {
+export function ProductCard({
+  product
+}: {
+  product: Omit<ItemType, 'quantity'>;
+}): ReactElement {
   const { addItem } = useCart();
   const { id, item, price } = product;
 
@@ -311,7 +377,7 @@ export function ProductCard({ product }) {
     <div>
       <h3>{item}</h3>
       <p>£{price}</p>
-      <button onClick={() => addItem(id, item, price, 1)}>Add item</button>
+      <button onClick={() => addItem(id, item, 1, price)}>Add item</button>
     </div>
   );
 }
@@ -330,12 +396,17 @@ export function ProductCard({ product }) {
  * multiple levels versus using context to access data directly.
  */
 
+type UserType2 = {
+  name: string;
+  avatar: string;
+};
+
 // Prop drilling version (for comparison)
-export function PropDrillingExample({ user }) {
+export function PropDrillingExample({ user }: { user: UserType2 }) {
   return <HeaderWithProps user={user} />;
 }
 
-function HeaderWithProps({ user }) {
+function HeaderWithProps({ user }: { user: UserType2 }): ReactElement {
   return (
     <header>
       <NavigationWithProps user={user} />
@@ -343,7 +414,7 @@ function HeaderWithProps({ user }) {
   );
 }
 
-function NavigationWithProps({ user }) {
+function NavigationWithProps({ user }: { user: UserType2 }): ReactElement {
   return (
     <nav>
       <UserMenuWithProps user={user} />
@@ -351,7 +422,7 @@ function NavigationWithProps({ user }) {
   );
 }
 
-function UserMenuWithProps({ user }) {
+function UserMenuWithProps({ user }: { user: UserType2 }): ReactElement {
   return (
     <div>
       <UserNameWithProps user={user} />
@@ -359,13 +430,22 @@ function UserMenuWithProps({ user }) {
   );
 }
 
-function UserNameWithProps({ user }) {
+function UserNameWithProps({ user }: { user: UserType2 }) {
   return <span>{user?.name || 'Guest'}</span>;
 }
 
-export const DeepUserContext = createContext();
+type DeepUserContextType = {
+  user: UserType2;
+};
 
-export function ContextSolutionExample({ user }) {
+export const DeepUserContext = createContext<DeepUserContextType>({
+  user: {
+    name: '',
+    avatar: ''
+  }
+});
+
+export function ContextSolutionExample({ user }: { user: UserType2 }) {
   return (
     <DeepUserContext.Provider value={{ user }}>
       <HeaderWithContext />
@@ -373,7 +453,7 @@ export function ContextSolutionExample({ user }) {
   );
 }
 
-function HeaderWithContext() {
+function HeaderWithContext(): ReactElement {
   return (
     <header>
       <NavigationWithContext />
@@ -381,7 +461,7 @@ function HeaderWithContext() {
   );
 }
 
-function NavigationWithContext() {
+function NavigationWithContext(): ReactElement {
   return (
     <nav>
       <UserMenuWithContext />
@@ -389,7 +469,7 @@ function NavigationWithContext() {
   );
 }
 
-function UserMenuWithContext() {
+function UserMenuWithContext(): ReactElement {
   return (
     <div>
       <UserNameWithContext />
@@ -397,7 +477,7 @@ function UserMenuWithContext() {
   );
 }
 
-function UserNameWithContext() {
+function UserNameWithContext(): ReactElement {
   const { user } = useContext(DeepUserContext);
 
   return <span>{user.name}</span>;
@@ -415,22 +495,45 @@ function UserNameWithContext() {
  * - Use useMemo and useCallback to optimize context values
  * - Prevent unnecessary component re-renders
  */
+type OptimizedUser = { name: string } | null;
 
-export const OptimizedUserDataContext = createContext();
-export const OptimizedUserActionsContext = createContext();
+type OptimizedUserDataContextType = {
+  value: OptimizedUser;
+};
 
-export function OptimizedUserProvider({ children }) {
-  const [user, setUser] = useState(null);
+type OptimizedUserActionsContextType = {
+  login: (person: OptimizedUser) => void;
+  logout: () => void;
+};
 
-  const login = useCallback((person) => {
-    setUser({ name: person.name });
+export const OptimizedUserDataContext =
+  createContext<OptimizedUserDataContextType>({
+    value: null
+  });
+export const OptimizedUserActionsContext =
+  createContext<OptimizedUserActionsContextType>({
+    login: () => {},
+    logout: () => {}
+  });
+
+export function OptimizedUserProvider({
+  children
+}: {
+  children: React.ReactNode;
+}) {
+  const [user, setUser] = useState<OptimizedUser>(null);
+
+  const login = useCallback((person: OptimizedUser) => {
+    if (person) {
+      setUser({ name: person.name });
+    }
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
   }, []);
 
-  const memoizedUser = useMemo(() => ({ user }), [user]);
+  const memoizedUser = useMemo(() => ({ value: user }), [user]);
 
   return (
     <OptimizedUserDataContext.Provider value={memoizedUser}>
@@ -457,22 +560,22 @@ export function useUserActions() {
   return context;
 }
 
-export function OptimizedUserDisplay() {
+export function OptimizedUserDisplay(): ReactElement {
   const user = useUserData();
 
   return (
     <div>
       <h3>Optimized User Display</h3>
-      <p>{user?.name || 'Guest'}</p>
+      <p>{user?.value?.name || 'Guest'}</p>
     </div>
   );
 }
 
-export function OptimizedUserActions() {
+export function OptimizedUserActions(): ReactElement {
   const [name, setName] = useState('');
   const { login, logout } = useUserActions();
 
-  function handleLogin(evt) {
+  function handleLogin(evt: FormEvent) {
     evt.preventDefault();
     login({ name });
   }
