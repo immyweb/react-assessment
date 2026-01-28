@@ -15,6 +15,7 @@ import {
   MemoizedChildComponent,
   RefExample,
   CustomInput,
+  CustomInputHandle,
   ImperativeHandleDemo,
   useLocalStorage,
   useWindowSize,
@@ -38,7 +39,7 @@ console.log = (...args) => {
 
 // Mock localStorage for testing
 const localStorageMock = (() => {
-  let store = {};
+  let store: Record<string, string> = {};
   return {
     getItem: vi.fn((key) => store[key] || null),
     setItem: vi.fn((key, value) => {
@@ -223,7 +224,7 @@ describe('Exercise 4: useImperativeHandle and forwardRef', () => {
   it('should expose focus method via ref', () => {
     // Create a test component to test the imperative handle
     function TestComponent() {
-      const inputRef = React.useRef();
+      const inputRef = React.useRef<CustomInputHandle>(null);
 
       React.useEffect(() => {
         if (inputRef.current) {
@@ -243,7 +244,7 @@ describe('Exercise 4: useImperativeHandle and forwardRef', () => {
   it('should expose reset method via ref', () => {
     // Create a test component to test the imperative handle
     function TestComponent() {
-      const inputRef = React.useRef();
+      const inputRef = React.useRef<CustomInputHandle>(null);
 
       return (
         <>
@@ -252,7 +253,7 @@ describe('Exercise 4: useImperativeHandle and forwardRef', () => {
             data-testid="custom-input"
             defaultValue="initial value"
           />
-          <button onClick={() => inputRef.current.reset()}>Reset</button>
+          <button onClick={() => inputRef.current?.reset()}>Reset</button>
         </>
       );
     }
@@ -274,9 +275,7 @@ describe('Exercise 4: useImperativeHandle and forwardRef', () => {
 
     // Check that the component renders properly
     expect(screen.getByText('Imperative Handle Demo')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('Type something...')
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('custom-input')).toHaveValue('Type something...');
     expect(screen.getByText('Focus Input')).toBeInTheDocument();
     expect(screen.getByText('Reset Input')).toBeInTheDocument();
   });

@@ -9,9 +9,6 @@
  * - Custom hooks
  * - useLayoutEffect vs useEffect timing differences
  * - useSyncExternalStore for external store integration
- *
- * Each exercise focuses on one clear example per hook concept
- * with straightforward requirements.
  */
 
 import React, {
@@ -43,20 +40,33 @@ import React, {
  * - fib(1) = 1
  * - fib(n) = fib(n-1) + fib(n-2) for n > 1
  */
-export function MemoCalculator({ number }) {
-  const [count, setCount] = useState(0);
+export function MemoCalculator({ number }: { number: number }) {
+  const [count, setCount] = useState<number>(0);
+  const [status, setStatus] = useState<string>('recalculated');
 
-  // TODO: Implement useMemo to calculate fibonacci(number)
-  // This calculation should only run when number changes
-  // Hint: Add console.log in the calculation to see when it runs
+  const fibonacci = useMemo(() => {
+    let result = [0, 1];
+
+    for (let i = 2; i <= number; i++) {
+      result[i] = result[i - 1] + result[i - 2];
+    }
+    console.log('calculating');
+    setStatus('recalculated');
+    return result[number];
+  }, [number]);
+
+  useEffect(() => {
+    // If count changes but number does not, value is cached
+    setStatus('cached');
+  }, [count]);
 
   return (
     <div>
       <h2>Fibonacci Calculator</h2>
       <p>
-        Fibonacci of {number}: {/* Display fibonacci result here */}
+        Fibonacci of {number}: {fibonacci}
       </p>
-      <p>This is {/* Show if using cached value or not */}</p>
+      <p>This is {status}</p>
       <button onClick={() => setCount((c) => c + 1)}>
         Clicked {count} times (shouldn't trigger recalculation)
       </button>
@@ -78,15 +88,12 @@ export function MemoCalculator({ number }) {
  * - Demonstrate when the callback is recreated vs reused
  */
 export function CallbackDemo() {
-  const [count, setCount] = useState(0);
-  const [text, setText] = useState('');
+  const [count, setCount] = useState<number>(0);
+  const [text, setText] = useState<string>('');
 
-  // TODO: Implement useCallback to optimize this function
-  // This function should only be recreated when text changes
-  // Not when count changes
-  const handleChildClick = () => {
+  const handleChildClick = useCallback(() => {
     console.log(`You clicked on: ${text}`);
-  };
+  }, [text]);
 
   return (
     <div>
@@ -108,6 +115,9 @@ export function CallbackDemo() {
 export const MemoizedChildComponent = React.memo(function ChildComponent({
   text,
   onClick
+}: {
+  text: string;
+  onClick: () => void;
 }) {
   console.log('Child component rendered');
 
@@ -132,12 +142,12 @@ export const MemoizedChildComponent = React.memo(function ChildComponent({
  * - Track the number of renders without causing re-renders
  */
 export function RefExample() {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState<string>('');
 
-  // TODO: Implement useRef for input element
-  // TODO: Implement useRef for render counting
+  const inputRef = useRef<HTMLInputElement>(null);
+  const renderCountRef = useRef<number>(0);
 
-  // TODO: Increment render count on each render
+  renderCountRef.current = renderCountRef.current + 1;
 
   return (
     <div>
@@ -146,16 +156,16 @@ export function RefExample() {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Type here"
-        // TODO: Add ref to this input
+        ref={inputRef}
       />
       <button
         onClick={() => {
-          // TODO: Implement focus functionality
+          inputRef.current?.focus();
         }}>
         Focus Input
       </button>
       <p>Current value: {value}</p>
-      <p>This component has rendered {/* Show render count */} times</p>
+      <p>This component has rendered {renderCountRef.current} times</p>
     </div>
   );
 }
@@ -172,41 +182,69 @@ export function RefExample() {
  * - Use useImperativeHandle to expose focus() and reset() methods
  * - Demonstrate the imperative methods in a parent component
  */
-export const CustomInput = forwardRef(function CustomInput(props, ref) {
-  const [value, setValue] = useState('');
-  const inputRef = useRef();
+export type CustomInputHandle = {
+  focus: () => void;
+  reset: () => void;
+};
 
-  // TODO: Implement useImperativeHandle to expose methods:
-  // 1. focus() - should focus the input element
-  // 2. reset() - should clear the input value
+export const CustomInput = forwardRef<
+  CustomInputHandle,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(function CustomInput(props, ref) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Ensure the initial value is always a string
+  const initial =
+    typeof props.defaultValue === 'string'
+      ? props.defaultValue
+      : props.defaultValue !== undefined
+        ? String(props.defaultValue)
+        : '';
+
+  const [value, setValue] = useState<string>(initial);
+
+  useImperativeHandle(ref, () => {
+    return {
+      focus() {
+        inputRef.current?.focus();
+      },
+      reset() {
+        setValue('');
+      }
+    };
+  }, []);
 
   return (
     <input
       ref={inputRef}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
+      value={typeof value === 'string' ? value : String(value)}
+      onChange={(e) => setValue(e.target.value.toString())}
       {...props}
     />
   );
 });
 
 export function ImperativeHandleDemo() {
-  // TODO: Create a ref to control the CustomInput
+  const inputRef = useRef<CustomInputHandle>(null);
 
   return (
     <div>
       <h2>Imperative Handle Demo</h2>
-      <CustomInput placeholder="Type something..." />
+      <CustomInput
+        defaultValue="Type something..."
+        data-testid="custom-input"
+        ref={inputRef}
+      />
       <div>
         <button
           onClick={() => {
-            // TODO: Call focus() on the CustomInput
+            inputRef.current?.focus();
           }}>
           Focus Input
         </button>
         <button
           onClick={() => {
-            // TODO: Call reset() on the CustomInput
+            inputRef.current?.reset();
           }}>
           Reset Input
         </button>
@@ -227,11 +265,31 @@ export function ImperativeHandleDemo() {
  * - Should handle serialization/deserialization of values
  * - Should return [value, setValue] just like useState
  */
-export function useLocalStorage(key, initialValue) {
-  // TODO: Implement localStorage hook
-  // 1. Initialize state by reading from localStorage
-  // 2. Create setValue function that updates both state and localStorage
-  // 3. Return [value, setValue] like useState
+export function useLocalStorage(key: string, initialValue: string) {
+  const [value, setValue] = useState(getStoredValue(key) || initialValue);
+
+  function getStoredValue(key: string) {
+    const data = localStorage.getItem(key);
+
+    try {
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function setStoredValue(newValue: string) {
+    localStorage.setItem(key, JSON.stringify(newValue));
+    setValue(newValue);
+  }
+
+  useEffect(() => {
+    setValue(getStoredValue(key) || initialValue);
+  }, [key]);
+
+  return [value, setStoredValue];
 }
 
 /**
@@ -243,18 +301,36 @@ export function useLocalStorage(key, initialValue) {
  * - Should clean up event listeners
  */
 export function useWindowSize() {
-  // TODO: Implement window dimensions hook
-  // 1. Create state for width and height
-  // 2. Add resize event listener to update dimensions
-  // 3. Clean up event listener in useEffect return function
-  // 4. Return current dimensions object
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return {
+    width: windowSize.width,
+    height: windowSize.height
+  };
 }
 
 /**
  * Demo component to showcase both custom hooks
  */
 export function CustomHooksDemo() {
-  // TODO: Use both custom hooks in this component
+  const { width, height } = useWindowSize();
+  const [value, setValue] = useLocalStorage('testKey', 'defaultValue');
 
   return (
     <div>
@@ -264,16 +340,16 @@ export function CustomHooksDemo() {
         <input
           type="text"
           placeholder="Value persists in localStorage"
-          // TODO: Connect to useLocalStorage
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
         />
-        <p>Stored value: {/* Display stored value */}</p>
+        <p>Stored value: {value}</p>
       </div>
 
       <div>
         <h3>Window Size</h3>
         <p>
-          Current window dimensions: {/* Display width */} x{' '}
-          {/* Display height */}
+          Current window dimensions: {width} x {height}
         </p>
         <p>
           <small>Try resizing your browser window</small>
@@ -297,15 +373,23 @@ export function CustomHooksDemo() {
  * - Show the difference in timing between useLayoutEffect and useEffect
  */
 export function LayoutEffectDemo() {
-  const [showContent, setShowContent] = useState(false);
-  const layoutEffectBoxRef = useRef();
-  const effectBoxRef = useRef();
+  const [showContent, setShowContent] = useState<boolean>(false);
+  const layoutEffectBoxRef = useRef<HTMLDivElement>(null);
+  const effectBoxRef = useRef<HTMLDivElement>(null);
 
-  // TODO: Implement useLayoutEffect example
-  // This should run synchronously before browser paint
+  useLayoutEffect(() => {
+    if (showContent && layoutEffectBoxRef.current) {
+      const { height } = layoutEffectBoxRef.current.getBoundingClientRect();
+      console.log(`useLayoutEffect: ${height}`);
+    }
+  }, []);
 
-  // TODO: Implement useEffect example
-  // This will run asynchronously after browser paint
+  useEffect(() => {
+    if (showContent && effectBoxRef.current) {
+      const { height } = effectBoxRef.current.getBoundingClientRect();
+      console.log(`useEffect: ${height}`);
+    }
+  }, []);
 
   return (
     <div>
@@ -360,27 +444,37 @@ export function LayoutEffectDemo() {
  * - Use useSyncExternalStore to subscribe to navigator.onLine
  * - Implement subscribe function with proper cleanup
  * - Implement getSnapshot function to return current online status
+ * - Handle server-side rendering with getServerSnapshot
  */
+
 export function OnlineStatusIndicator() {
-  // TODO: Implement subscribe function
-  // This function should:
-  // 1. Accept a callback parameter
-  // 2. Add event listeners for 'online' and 'offline' events
-  // 3. Return cleanup function that removes event listeners
+  function subscribe(callback: () => void) {
+    window.addEventListener('online', callback);
+    window.addEventListener('offline', callback);
+    return () => {
+      window.removeEventListener('online', callback);
+      window.removeEventListener('offline', callback);
+    };
+  }
 
-  // TODO: Implement getSnapshot function
-  // This function should return the current value of navigator.onLine
+  function getSnapshot() {
+    return navigator.onLine;
+  }
 
-  // TODO: Implement getServerSnapshot function
-  // This function should return a default value for server-side rendering (true)
+  function getServerSnapshot() {
+    return true; // Always show "Online" for server-generated HTML
+  }
 
-  // TODO: Use useSyncExternalStore to get the online status
-  // Pass subscribe, getSnapshot, and getServerSnapshot
+  const isOnline = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
 
   return (
     <div>
       <h2>Network Status</h2>
-      <p>Status: {/* Display online/offline status with emoji */}</p>
+      <p>Status: {isOnline ? '✅ Online' : '❌ Disconnected'}</p>
       <p>
         <small>Try turning your network on/off to see the status change</small>
       </p>
@@ -398,42 +492,51 @@ export function OnlineStatusIndicator() {
  * - Add buttons to increment, decrement, and reset the counter
  */
 
-// TODO: Create a counterStore object with:
-// - A private state variable to hold the count
-// - listeners Set to track subscribers
-// - subscribe(callback) method that adds listener and returns cleanup function
-// - getSnapshot() method that returns current count
-// - increment() method that updates count and notifies listeners
-// - decrement() method that updates count and notifies listeners
-// - reset() method that sets count to 0 and notifies listeners
+const counterStore = (() => {
+  let count = 0;
+  const listeners = new Set<() => void>();
+
+  function notify() {
+    listeners.forEach((listener) => listener());
+  }
+
+  return {
+    subscribe(callback: () => void) {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    getSnapshot() {
+      return count;
+    },
+    increment() {
+      count++;
+      notify();
+    },
+    decrement() {
+      count--;
+      notify();
+    },
+    reset() {
+      count = 0;
+      notify();
+    }
+  };
+})();
 
 export function ExternalStoreCounter() {
-  // TODO: Use useSyncExternalStore to subscribe to counterStore
-  // Pass counterStore.subscribe and counterStore.getSnapshot
+  const count = useSyncExternalStore(
+    counterStore.subscribe,
+    counterStore.getSnapshot
+  );
 
   return (
     <div>
       <h2>External Store Counter</h2>
-      <p>Count: {/* Display count from store */}</p>
+      <p>Count: {count}</p>
       <div>
-        <button
-          onClick={() => {
-            // TODO: Call counterStore.decrement()
-          }}>
-          -
-        </button>
-        <button
-          onClick={() => {
-            // TODO: Call counterStore.increment()
-          }}>
-          +
-        </button>
-        <button
-          onClick={() => {
-            // TODO: Call counterStore.reset()
-          }}>
-          Reset
-        </button>
+        <button onClick={() => counterStore.decrement()}>-</button>
+        <button onClick={() => counterStore.increment()}>+</button>
+        <button onClick={() => counterStore.reset()}>Reset</button>
       </div>
       <p>
         <small>
