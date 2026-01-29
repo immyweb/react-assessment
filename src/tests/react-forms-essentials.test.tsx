@@ -47,7 +47,7 @@ import {
   ZodWithReactHookForm,
   ZodCustomRefinements,
   ZodTransforms
-} from '../exercises/react-forms-essentials';
+} from '../answers/react-forms-essentials';
 
 // =============================================================================
 // EXERCISE 1 TESTS: Controlled Form Patterns
@@ -616,7 +616,7 @@ describe('Exercise 3: Accessibility in Forms', () => {
     });
   });
 
-  describe.only('FocusTrapForm', () => {
+  describe('FocusTrapForm', () => {
     it('should have dialog role when open', () => {
       render(
         <FocusTrapForm isOpen={true} onClose={vi.fn()} onSubmit={vi.fn()} />
@@ -680,9 +680,9 @@ describe('Exercise 4: useFormStatus', () => {
 
     it('should show "Submitting..." when pending', async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
+      const onSubmit = vi.fn(async (_formData: FormData) => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
       render(
         <form action={onSubmit}>
           <UseFormStatusButton />
@@ -699,9 +699,9 @@ describe('Exercise 4: useFormStatus', () => {
 
     it('should disable button when pending', async () => {
       const user = userEvent.setup();
-      const onSubmit = vi.fn(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
+      const onSubmit = vi.fn(async (_formData: FormData) => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
       render(
         <form action={onSubmit}>
           <UseFormStatusButton />
@@ -881,11 +881,13 @@ describe('Exercise 4: useFormStatus', () => {
       await user.type(screen.getByLabelText(/phone/i), '1234567890');
       await user.click(screen.getByRole('button', { name: /submit/i }));
 
-      const status = screen.getByTestId('form-status');
-      expect(status).toHaveTextContent(/submitting/i);
-      expect(status).toHaveTextContent(/john doe/i);
-      expect(status).toHaveTextContent(/john@example.com/i);
-      expect(status).toHaveTextContent(/1234567890/i);
+      await waitFor(() => {
+        const status = screen.getByTestId('form-status');
+        expect(status).toHaveTextContent(/submitting/i);
+        expect(status).toHaveTextContent(/john doe/i);
+        expect(status).toHaveTextContent(/john@example.com/i);
+        expect(status).toHaveTextContent(/1234567890/i);
+      });
     });
 
     it('should clear status after submission completes', async () => {

@@ -9,10 +9,16 @@
  * - useActionState
  * - React Hook Form
  * - Zod validation
- *
  */
 
-import { useState, useRef, useActionState } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useActionState,
+  FormEvent,
+  ReactElement
+} from 'react';
 import { useFormStatus } from 'react-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import * as z from 'zod';
@@ -40,12 +46,24 @@ import { zodResolver } from '@hookform/resolvers/zod';
  * - Proper labels for all inputs
  * - Associated with htmlFor/id
  */
-export function ControlledForm({ onSubmit }) {
+export function ControlledForm({
+  onSubmit
+}: {
+  onSubmit: ({
+    name,
+    email,
+    message
+  }: {
+    name: string;
+    email: string;
+    message: string;
+  }) => void;
+}): ReactElement {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     const data = {
       name,
@@ -110,7 +128,21 @@ export function ControlledForm({ onSubmit }) {
  * - All inputs have labels
  * - Fieldset/legend for radio group
  */
-export function MultiInputForm({ onSubmit }) {
+type MultiInputFormSubmit = {
+  username: string;
+  email: string;
+  password: string;
+  age: number;
+  country: string;
+  role: string;
+  agreed: boolean;
+};
+
+export function MultiInputForm({
+  onSubmit
+}: {
+  onSubmit: (data: MultiInputFormSubmit) => void;
+}): ReactElement {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -129,7 +161,7 @@ export function MultiInputForm({ onSubmit }) {
     setRole('user');
   }
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     const data = {
       username,
@@ -250,13 +282,22 @@ export function MultiInputForm({ onSubmit }) {
  *   contact: { email: '', phone: '' }
  * }
  */
-export function NestedStateForm({ onSubmit }) {
+type NestedStateFormType = {
+  personal: { firstName: string; lastName: string };
+  contact: { email: string; phone: string };
+};
+
+export function NestedStateForm({
+  onSubmit
+}: {
+  onSubmit: (data: NestedStateFormType) => void;
+}): ReactElement {
   const [person, setPerson] = useState({
     personal: { firstName: '', lastName: '' },
     contact: { email: '', phone: '' }
   });
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     onSubmit(person);
   }
@@ -347,13 +388,17 @@ export function NestedStateForm({ onSubmit }) {
  * - Email: "Invalid email format"
  * - Password: "Password must be at least 8 characters", etc.
  */
-export function RealtimeValidationForm({ onSubmit }) {
+export function RealtimeValidationForm({
+  onSubmit
+}: {
+  onSubmit: ({ email, password }: { email: string; password: string }) => void;
+}): ReactElement {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailValid, setEmailValid] = useState(false);
-  const [passwordError, setPasswordError] = useState([]);
+  const [passwordError, setPasswordError] = useState<string[]>([]);
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     if (emailValid && passwordError.length === 0) {
       const data = {
@@ -364,12 +409,12 @@ export function RealtimeValidationForm({ onSubmit }) {
     }
   }
 
-  function handleEmail(text) {
+  function handleEmail(text: string) {
     setEmail(text);
     setEmailValid(isValidEmail(text));
   }
 
-  function handlePassword(text) {
+  function handlePassword(text: string) {
     setPassword(text);
     setPasswordError(validatePassword(text));
   }
@@ -431,7 +476,19 @@ export function RealtimeValidationForm({ onSubmit }) {
  *
  * Phone pattern: XXX-XXX-XXXX or (XXX) XXX-XXXX
  */
-export function TouchedValidationForm({ onSubmit }) {
+export function TouchedValidationForm({
+  onSubmit
+}: {
+  onSubmit: ({
+    name,
+    email,
+    phone
+  }: {
+    name: string;
+    email: string;
+    phone: string;
+  }) => void;
+}): ReactElement {
   const [name, setName] = useState('');
   const [nameTouched, setNameTouched] = useState(false);
   const [nameValid, setNameValid] = useState(true);
@@ -444,15 +501,15 @@ export function TouchedValidationForm({ onSubmit }) {
   const [phoneTouched, setPhoneTouched] = useState(false);
   const [phoneValid, setPhoneValid] = useState(true);
 
-  function validatePhoneNumber(phone) {
+  function validatePhoneNumber(phone: string) {
     return /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/.test(phone);
   }
 
-  function validateName(name) {
+  function validateName(name: string) {
     return name.length > 2;
   }
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     setNameValid(validateName(name));
     setEmailValid(isValidEmail(email));
@@ -465,17 +522,17 @@ export function TouchedValidationForm({ onSubmit }) {
     }
   }
 
-  function handleName(text) {
+  function handleName(text: string) {
     setNameTouched(true);
     setNameValid(validateName(text));
   }
 
-  function handleEmail(text) {
+  function handleEmail(text: string) {
     setEmailTouched(true);
     setEmailValid(isValidEmail(text));
   }
 
-  function handlePhone(text) {
+  function handlePhone(text: string) {
     setPhoneTouched(true);
     if (text.length > 0) {
       setPhoneValid(validatePhoneNumber(text));
@@ -551,10 +608,14 @@ export function TouchedValidationForm({ onSubmit }) {
  *
  * States: idle, checking, available, taken
  */
-export function AsyncValidationForm({ onSubmit }) {
+export function AsyncValidationForm({
+  onSubmit
+}: {
+  onSubmit: ({ username }: { username: string }) => void;
+}): ReactElement {
   const [status, setStatus] = useState('idle');
 
-  function checkAvailability(value) {
+  function checkAvailability(value: string) {
     return new Promise(() => {
       setStatus('checking');
       setTimeout(() => {
@@ -567,9 +628,11 @@ export function AsyncValidationForm({ onSubmit }) {
     });
   }
 
-  function handleSubmit(formData) {
-    const data = Object.fromEntries(formData);
-    onSubmit(data);
+  function handleSubmit(formData: FormData) {
+    const username = formData.get('username');
+    if (typeof username === 'string') {
+      onSubmit({ username });
+    }
   }
 
   return (
@@ -611,7 +674,19 @@ export function AsyncValidationForm({ onSubmit }) {
  * Fields: firstName, lastName, email, subscribe (checkbox), role (radio)
  * Validation: firstName and email required
  */
-export function AccessibleForm({ onSubmit }) {
+type AccessibleFormType = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  subscribed: boolean;
+  role: string;
+};
+
+export function AccessibleForm({
+  onSubmit
+}: {
+  onSubmit: (data: AccessibleFormType) => void;
+}): ReactElement {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -622,14 +697,14 @@ export function AccessibleForm({ onSubmit }) {
   const [emailError, setEmailError] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
-  const firstNameRef = useRef(null);
-  const emailRef = useRef(null);
+  const firstNameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
 
-  function isValidField(value) {
+  function isValidField(value: string) {
     return value.length > 0;
   }
 
-  async function handleSubmit(evt) {
+  async function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
     setIsPending(true);
 
@@ -640,9 +715,9 @@ export function AccessibleForm({ onSubmit }) {
     setEmailError(!emailIsValid);
 
     if (!firstNameIsValid) {
-      firstNameRef.current.focus();
+      firstNameRef.current?.focus();
     } else if (!emailIsValid) {
-      emailRef.current.focus();
+      emailRef.current?.focus();
     }
 
     if (!firstNameError && !emailError) {
@@ -751,11 +826,21 @@ export function AccessibleForm({ onSubmit }) {
  *
  * Prevent default behavior for shortcuts
  */
-export function KeyboardNavigationForm({ onSubmit }) {
+export function KeyboardNavigationForm({
+  onSubmit
+}: {
+  onSubmit: ({
+    title,
+    description
+  }: {
+    title: string;
+    description: string;
+  }) => void;
+}): ReactElement {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
-  function handleKeyDown(evt) {
+  function handleKeyDown(evt: React.KeyboardEvent<HTMLInputElement>) {
     if (evt.key === 'Enter') {
       evt.preventDefault();
       onSubmit({
@@ -787,7 +872,7 @@ export function KeyboardNavigationForm({ onSubmit }) {
         value={title}
         aria-required="true"
         onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => handleKeyDown(e)}
+        onKeyDown={handleKeyDown}
       />
 
       <label htmlFor="description">Description</label>
@@ -797,7 +882,7 @@ export function KeyboardNavigationForm({ onSubmit }) {
         value={description}
         aria-required="true"
         onChange={(e) => setDescription(e.target.value)}
-        onKeyDown={(e) => handleKeyDown(e)}
+        onKeyDown={handleKeyDown}
       />
 
       <button type="submit">Submit</button>
@@ -827,22 +912,29 @@ export function KeyboardNavigationForm({ onSubmit }) {
  * - "Email is invalid" / "Email is valid"
  * - "Password is too short" / "Password is valid"
  */
-export function LiveValidationForm({ onSubmit }) {
+export function LiveValidationForm({
+  onSubmit
+}: {
+  onSubmit: ({ email, password }: { email: string; password: string }) => void;
+}): ReactElement {
   const [emailValid, setEmailValid] = useState(false);
   const [passwordValid, setPasswordValid] = useState(false);
 
-  function validateEmail(value) {
+  function handleValidateEmail(value: string) {
     setEmailValid(isValidEmail(value));
   }
 
-  function validatePassword(value) {
+  function handleValidatePassword(value: string) {
     const errors = validatePassword(value);
     errors.length > 0 ? setPasswordValid(false) : setPasswordValid(true);
   }
 
-  function handleSubmit(formData) {
-    const data = Object.fromEntries(formData);
-    onSubmit(data);
+  function handleSubmit(formData: FormData) {
+    const email = formData.get('email');
+    const password = formData.get('password');
+    if (typeof email === 'string' && typeof password === 'string') {
+      onSubmit({ email, password });
+    }
   }
 
   return (
@@ -851,14 +943,14 @@ export function LiveValidationForm({ onSubmit }) {
       <input
         id="email"
         name="email"
-        onBlur={(e) => validateEmail(e.target.value)}
+        onBlur={(e) => handleValidateEmail(e.target.value)}
       />
 
       <label htmlFor="password">Password</label>
       <input
         id="password"
         name="password"
-        onBlur={(e) => validatePassword(e.target.value)}
+        onBlur={(e) => handleValidatePassword(e.target.value)}
       />
 
       <div role="region" aria-live="polite" data-testid="live-region">
@@ -888,9 +980,17 @@ export function LiveValidationForm({ onSubmit }) {
  *
  * Modal should have role="dialog" and aria-modal="true"
  */
-export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
-  const modalRef = useRef(null);
-  const triggerRef = useRef(null);
+export function FocusTrapForm({
+  isOpen,
+  onClose,
+  onSubmit
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
+}): ReactElement {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -898,31 +998,35 @@ export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
       triggerRef.current = document.activeElement;
 
       const modalElement = modalRef.current;
+      if (!modalElement) return;
+
       const focusableElements = modalElement.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-      const firstElement = focusableElements[0];
-      const lastElement = focusableElements[focusableElements.length - 1];
+      const firstElement = focusableElements[0] as HTMLElement | undefined;
+      const lastElement = focusableElements[focusableElements.length - 1] as
+        | HTMLElement
+        | undefined;
 
       // Restore focus to the trigger element
-      firstElement.focus();
+      firstElement?.focus();
 
-      function handleTabKeyPress(event) {
+      function handleTabKeyPress(event: KeyboardEvent) {
         if (event.key === 'Tab') {
           if (event.shiftKey && document.activeElement === firstElement) {
             event.preventDefault();
-            lastElement.focus();
+            lastElement?.focus();
           } else if (
             !event.shiftKey &&
             document.activeElement === lastElement
           ) {
             event.preventDefault();
-            firstElement.focus();
+            firstElement?.focus();
           }
         }
       }
 
-      function handleEscapeKeyPress(event) {
+      function handleEscapeKeyPress(event: KeyboardEvent) {
         if (event.key === 'Escape') {
           onClose();
         }
@@ -936,10 +1040,10 @@ export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
         modalElement.removeEventListener('keydown', handleEscapeKeyPress);
 
         // Restore focus to the trigger element
-        triggerRef.current?.focus();
+        (triggerRef.current as HTMLElement | null)?.focus();
       };
     }
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   return isOpen ? (
     <div ref={modalRef} role="dialog" aria-modal="true">
@@ -979,7 +1083,7 @@ export function FocusTrapForm({ isOpen, onClose, onSubmit }) {
  * Note: useFormStatus must be called in a component that is a child
  * of a form with an action prop.
  */
-export function UseFormStatusButton() {
+export function UseFormStatusButton(): ReactElement {
   const { pending } = useFormStatus();
 
   return (
@@ -1005,17 +1109,43 @@ export function UseFormStatusButton() {
  *
  * Button data-testids: "save-button", "publish-button"
  */
-export function MultiActionFormStatus({ onSaveDraft, onPublish }) {
-  async function saveDraftAction(formData) {
-    const data = Object.fromEntries(formData);
-    const response = await onSaveDraft(data);
-    return response;
+export function MultiActionFormStatus({
+  onSaveDraft,
+  onPublish
+}: {
+  onSaveDraft: ({
+    titleInput,
+    contentInput
+  }: {
+    titleInput: string;
+    contentInput: string;
+  }) => void;
+  onPublish: ({
+    titleInput,
+    contentInput
+  }: {
+    titleInput: string;
+    contentInput: string;
+  }) => void;
+}): ReactElement {
+  function saveDraftAction(formData: FormData) {
+    const titleInput = formData.get('titleInput');
+    const contentInput = formData.get('contentInput');
+
+    if (typeof titleInput === 'string' && typeof contentInput === 'string') {
+      const response = onSaveDraft({ titleInput, contentInput });
+      return response;
+    }
   }
 
-  async function publishAction(formData) {
-    const data = Object.fromEntries(formData);
-    const response = await onPublish(data);
-    return response;
+  function publishAction(formData: FormData) {
+    const titleInput = formData.get('titleInput');
+    const contentInput = formData.get('contentInput');
+
+    if (typeof titleInput === 'string' && typeof contentInput === 'string') {
+      const response = onPublish({ titleInput, contentInput });
+      return response;
+    }
   }
 
   return (
@@ -1042,7 +1172,17 @@ export function MultiActionFormStatus({ onSaveDraft, onPublish }) {
   );
 }
 
-function MultiActionButton({ action, testId, text, textPending }) {
+function MultiActionButton({
+  action,
+  testId,
+  text,
+  textPending
+}: {
+  action: (formData: FormData) => void;
+  testId: string;
+  text: string;
+  textPending: string;
+}): ReactElement {
   const { pending } = useFormStatus();
 
   return (
@@ -1067,19 +1207,27 @@ function MultiActionButton({ action, testId, text, textPending }) {
  *
  * LoadingIndicator should be a sibling of form fields, not the button
  */
-export function FormStatusWithIndicator({ onSubmit }) {
-  async function submitAction(formData) {
-    const data = Object.fromEntries(formData);
-    await onSubmit(data);
+export function FormStatusWithIndicator({
+  onSubmit
+}: {
+  onSubmit: ({ email, message }: { email: string; message: string }) => void;
+}): ReactElement {
+  function submitAction(formData: FormData) {
+    const email = formData.get('email');
+    const message = formData.get('message');
+
+    if (typeof email === 'string' && typeof message === 'string') {
+      onSubmit({ email, message });
+    }
   }
 
   return (
     <form role="form" action={submitAction}>
-      <label htmlFor="emailInput">Email</label>
-      <input name="emailInput" id="emailInput" type="email" />
+      <label htmlFor="email">Email</label>
+      <input name="email" id="email" type="email" />
 
-      <label htmlFor="messageInput">Message</label>
-      <input name="messageInput" id="messageInput" />
+      <label htmlFor="message">Message</label>
+      <input name="message" id="message" />
 
       <button type="submit">Submit</button>
       <LoadingIndicator />
@@ -1087,7 +1235,7 @@ export function FormStatusWithIndicator({ onSubmit }) {
   );
 }
 
-function LoadingIndicator() {
+function LoadingIndicator(): ReactElement {
   const { pending } = useFormStatus();
 
   return (
@@ -1115,22 +1263,43 @@ function LoadingIndicator() {
  * - Only show status when pending
  * - Clear status after submission completes
  */
-export function FormStatusWithData({ onSubmit }) {
-  async function submitAction(formDate) {
-    const data = Object.fromEntries(formDate);
-    await onSubmit(data);
+export function FormStatusWithData({
+  onSubmit
+}: {
+  onSubmit: ({
+    name,
+    email,
+    phone
+  }: {
+    name: string;
+    email: string;
+    phone: string;
+  }) => void;
+}): ReactElement {
+  async function submitAction(formData: FormData) {
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+
+    if (
+      typeof name === 'string' &&
+      typeof email === 'string' &&
+      typeof phone === 'string'
+    ) {
+      await onSubmit({ name, email, phone });
+    }
   }
 
   return (
     <form role="form" action={submitAction}>
-      <label htmlFor="nameInput">Name</label>
-      <input id="nameInput" name="nameInput" />
+      <label htmlFor="name">Name</label>
+      <input id="name" name="name" />
 
-      <label htmlFor="emailInput">Email</label>
-      <input id="emailInput" name="emailInput" type="email" />
+      <label htmlFor="email">Email</label>
+      <input id="email" name="email" type="email" />
 
-      <label htmlFor="phoneInput">Phone</label>
-      <input id="phoneInput" name="phoneInput" type="tel" />
+      <label htmlFor="phone">Phone</label>
+      <input id="phone" name="phone" type="tel" />
 
       <button type="submit">Submit</button>
       <StatusIndicator />
@@ -1138,15 +1307,15 @@ export function FormStatusWithData({ onSubmit }) {
   );
 }
 
-function StatusIndicator() {
+function StatusIndicator(): ReactElement {
   const { pending, data } = useFormStatus();
 
   return (
     <>
       {pending ? (
         <div data-testid="form-status">{`Submitting: ${data.get(
-          'nameInput'
-        )}, ${data.get('emailInput')}, ${data.get('phoneInput')}`}</div>
+          'name'
+        )}, ${data.get('email')}, ${data.get('phone')}`}</div>
       ) : (
         <div></div>
       )}
@@ -1175,13 +1344,29 @@ function StatusIndicator() {
  *
  * State structure: { success: boolean, message: string, errors?: object }
  */
-export function UseActionStateBasic() {
-  const [formState, formAction] = useActionState(validateData, {});
+type FormUseActionState = {
+  success?: boolean;
+  message?: string;
+};
 
-  function validateData(prevState, formData) {
-    const isNameValid =
-      formData.get('usernameInput').length >= 3 ? true : false;
-    const isEmailValid = isValidEmail(formData.get('emailInput'));
+export function UseActionStateBasic(): ReactElement {
+  const [formState, formAction] = useActionState(validateData, {
+    success: false,
+    message: ''
+  });
+
+  function validateData(prevState: FormUseActionState, formData: FormData) {
+    const username = formData.get('username') as string;
+    const email = formData.get('email') as string;
+    let isNameValid, isEmailValid;
+
+    if (username) {
+      isNameValid = username.length >= 3 ? true : false;
+    }
+
+    if (email) {
+      isEmailValid = isValidEmail(email);
+    }
 
     if (isNameValid && isEmailValid) {
       return {
@@ -1208,11 +1393,11 @@ export function UseActionStateBasic() {
 
   return (
     <form role="form" action={formAction}>
-      <label htmlFor="usernameInput">Username</label>
-      <input id="usernameInput" name="usernameInput" />
+      <label htmlFor="username">Username</label>
+      <input id="username" name="username" />
 
-      <label htmlFor="emailInput">Email</label>
-      <input id="emailInput" name="emailInput" />
+      <label htmlFor="email">Email</label>
+      <input id="email" name="email" />
 
       <button type="submit">Submit</button>
 
@@ -1245,28 +1430,60 @@ export function UseActionStateBasic() {
  *
  * State structure: { step: number, data: object, errors: object }
  */
-export function MultiStepActionState({ onSubmit }) {
-  const [formState, formAction] = useActionState(handleFormSteps, {
+type MultiStepActionStateType = {
+  step: number;
+  data: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  };
+  errors: MultiStepActionStateErrors;
+};
+
+type MultiStepActionStateErrors = {
+  firstnameInput?: string;
+  lastnameInput?: string;
+  emailInput?: string;
+};
+
+type MultiStepActionStateProps = {
+  onSubmit: (data: MultiStepActionStateType['data']) => void;
+};
+
+export function MultiStepActionState({
+  onSubmit
+}: MultiStepActionStateProps): ReactElement {
+  const [formState, formAction] = useActionState<
+    MultiStepActionStateType,
+    FormData
+  >(handleFormSteps, {
     step: 1,
     data: {},
     errors: {}
   });
 
-  function validateText(text) {
+  function validateText(text: string) {
     return text && text.length >= 3;
   }
 
-  function handleFormSteps(prevState, formData) {
+  function handleFormSteps(
+    prevState: MultiStepActionStateType,
+    formData: FormData
+  ) {
     const data = Object.fromEntries(formData);
-    const errors = {};
+    const errors: MultiStepActionStateErrors = {};
 
     if (data.action === 'next') {
+      const firstName = formData.get('firstnameInput') as string;
+      const lastName = formData.get('lastnameInput') as string;
+
       if (prevState.step === 1) {
-        if (!validateText(data.firstnameInput)) {
+        if (!validateText(firstName)) {
           errors.firstnameInput =
             'First name is required and must be at least 3 characters.';
         }
-        if (!validateText(data.lastnameInput)) {
+        if (!validateText(lastName)) {
           errors.lastnameInput =
             'Last name is required and must be at least 3 characters.';
         }
@@ -1279,15 +1496,18 @@ export function MultiStepActionState({ onSubmit }) {
           step: 2,
           data: {
             ...prevState.data,
-            firstName: data.firstnameInput,
-            lastName: data.lastnameInput
+            firstName,
+            lastName
           },
           errors: {}
         };
       }
 
       if (prevState.step === 2) {
-        if (!isValidEmail(data.emailInput)) {
+        const email = formData.get('emailInput') as string;
+        const phone = formData.get('phoneInput') as string;
+
+        if (!isValidEmail(email)) {
           errors.emailInput = 'A valid email is required.';
         }
 
@@ -1299,8 +1519,8 @@ export function MultiStepActionState({ onSubmit }) {
           step: 3,
           data: {
             ...prevState.data,
-            email: data.emailInput,
-            phone: data.phoneInput
+            email,
+            phone
           },
           errors: {}
         };
@@ -1322,16 +1542,16 @@ export function MultiStepActionState({ onSubmit }) {
     }
 
     if (data.action === 'submit') {
-      if (!validateText(prevState.data.firstName)) {
-        errors.firstName =
+      if (prevState.data.firstName && !validateText(prevState.data.firstName)) {
+        errors.firstnameInput =
           'First name is required and must be at least 3 characters.';
       }
-      if (!validateText(prevState.data.lastName)) {
-        errors.lastName =
+      if (prevState.data.lastName && !validateText(prevState.data.lastName)) {
+        errors.lastnameInput =
           'Last name is required and must be at least 3 characters.';
       }
-      if (!isValidEmail(prevState.data.email)) {
-        errors.email = 'A valid email is required.';
+      if (prevState.data.email && !isValidEmail(prevState.data.email)) {
+        errors.emailInput = 'A valid email is required.';
       }
 
       if (Object.keys(errors).length > 0) {
@@ -1453,25 +1673,50 @@ export function MultiStepActionState({ onSubmit }) {
  *
  * State structure: { errors: { username?, email?, password?, confirmPassword? }, success: boolean }
  */
-export function FieldErrorsActionState({ onSubmit }) {
-  const [formState, formAction] = useActionState(validateData, {
+type FieldErrorsActionStateType = {
+  errors: FieldErrorsActionStateErrors;
+  success: boolean;
+};
+
+type FieldErrorsActionStateErrors = {
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
+
+export function FieldErrorsActionState({
+  onSubmit
+}: {
+  onSubmit: () => void;
+}): ReactElement {
+  const [formState, formAction] = useActionState<
+    FieldErrorsActionStateType,
+    FormData
+  >(validateData, {
     errors: {},
     success: false
   });
 
-  function validateUsername(text) {
+  function validateUsername(text: string) {
     return text && text.length >= 3 && isAlphaNumeric(text);
   }
 
-  function validateData(prevState, formData) {
-    const data = Object.fromEntries(formData);
+  function validateData(
+    prevState: FieldErrorsActionStateType,
+    formData: FormData
+  ) {
+    const username = formData.get('username') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
-    const isUsernameValid = validateUsername(data.username);
-    const isEmailValid = isValidEmail(data.email);
-    const isPasswordValid = validatePassword(data.password);
-    const isPasswordSame = data.password === data.confirmPassword;
+    const isUsernameValid = validateUsername(username);
+    const isEmailValid = isValidEmail(email);
+    const isPasswordValid = validatePassword(password);
+    const isPasswordSame = password === confirmPassword;
 
-    const errors = {};
+    const errors: FieldErrorsActionStateErrors = {};
 
     if (!isUsernameValid) {
       errors.username = 'Username is not valid. Min 3 chars, alphanumeric only';
@@ -1585,14 +1830,24 @@ export function FieldErrorsActionState({ onSubmit }) {
  *
  * Example: <input {...register("name", { required: true })} />
  */
-export function ReactHookFormBasic({ onSubmit }) {
+type ReactHookFormBasicData = {
+  name: string;
+  email: string;
+  age: number;
+};
+
+export function ReactHookFormBasic({
+  onSubmit
+}: {
+  onSubmit: (data: ReactHookFormBasicData) => void;
+}): ReactElement {
   const {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm();
+  } = useForm<ReactHookFormBasicData>();
 
-  function onSubmitForm(data) {
+  function onSubmitForm(data: ReactHookFormBasicData) {
     onSubmit(data);
   }
 
@@ -1661,17 +1916,27 @@ export function ReactHookFormBasic({ onSubmit }) {
  *
  * Custom validate syntax: validate: { ruleName: (value) => true | "error message" }
  */
-export function ReactHookFormCustomValidation({ onSubmit }) {
+type ReactHookFormCustomValidationType = {
+  username: string;
+  password: string;
+  confirmPassword: string;
+};
+
+export function ReactHookFormCustomValidation({
+  onSubmit
+}: {
+  onSubmit: (data: ReactHookFormCustomValidationType) => void;
+}): ReactElement {
   const {
     register,
     handleSubmit,
     formState: { errors, isValidating, isValid, isSubmitted },
     watch
-  } = useForm({ mode: 'onChange' });
+  } = useForm<ReactHookFormCustomValidationType>({ mode: 'onChange' });
 
   const watchPassword = watch('password');
 
-  async function checkAvailability(text) {
+  async function checkAvailability(text: string) {
     if (text === 'admin' || text === 'user' || text === 'test') {
       return false;
     } else {
@@ -1679,7 +1944,7 @@ export function ReactHookFormCustomValidation({ onSubmit }) {
     }
   }
 
-  function onSubmitForm(data) {
+  function onSubmitForm(data: ReactHookFormCustomValidationType) {
     if (isValid) {
       onSubmit(data);
     }
@@ -1760,13 +2025,23 @@ export function ReactHookFormCustomValidation({ onSubmit }) {
  *
  * Default: Start with 1 empty phone field
  */
-export function ReactHookFormFieldArray({ onSubmit }) {
+type ReactHookFormFieldArrayType = {
+  name: string;
+  email: string;
+  phones: { number: string }[];
+};
+
+export function ReactHookFormFieldArray({
+  onSubmit
+}: {
+  onSubmit: (data: ReactHookFormFieldArrayType) => void;
+}): ReactElement {
   const {
     register,
     handleSubmit,
     formState: { errors, isValid },
     control
-  } = useForm({
+  } = useForm<ReactHookFormFieldArrayType>({
     defaultValues: {
       phones: [{}]
     }
@@ -1774,7 +2049,7 @@ export function ReactHookFormFieldArray({ onSubmit }) {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'phones' });
 
-  function onSubmitForm(data) {
+  function onSubmitForm(data: ReactHookFormFieldArrayType) {
     if (isValid) {
       onSubmit(data);
     }
@@ -1806,13 +2081,12 @@ export function ReactHookFormFieldArray({ onSubmit }) {
                 }
               })}
             />
-            {errors.phones?.map((phone, i) => {
-              return (
+            {Array.isArray(errors.phones) &&
+              errors.phones.map((phone, i) => (
                 <span role="alert" key={`error-${i}`}>
-                  {phone.number.message}
+                  {phone?.number?.message}
                 </span>
-              );
-            })}
+              ))}
             <button
               type="button"
               data-testid={`remove-phone-${index}`}
@@ -1823,7 +2097,10 @@ export function ReactHookFormFieldArray({ onSubmit }) {
         ))}
       </ul>
 
-      <button type="button" data-testid="add-phone" onClick={() => append()}>
+      <button
+        type="button"
+        data-testid="add-phone"
+        onClick={() => append({ number: '' })}>
         Add phone
       </button>
 
@@ -1851,18 +2128,29 @@ export function ReactHookFormFieldArray({ onSubmit }) {
  *
  * TagInput props: value, onChange (array of strings)
  */
-export function ReactHookFormControlled({ onSubmit }) {
+type ReactHookFormControlledType = {
+  title: string;
+  description: string;
+  category: string;
+  tags: string;
+};
+
+export function ReactHookFormControlled({
+  onSubmit
+}: {
+  onSubmit: (data: ReactHookFormControlledType) => void;
+}): ReactElement {
   const {
     register,
     handleSubmit,
     formState: { errors, isValidating, isValid, isSubmitted },
     control,
     watch
-  } = useForm();
+  } = useForm<ReactHookFormControlledType>();
 
   const watchDescription = watch('description');
 
-  function onSubmitForm(data) {
+  function onSubmitForm(data: ReactHookFormControlledType) {
     if (isValid) {
       onSubmit(data);
     }
@@ -1928,27 +2216,38 @@ export function ReactHookFormControlled({ onSubmit }) {
   );
 }
 
-function TagInput({ value = [], onChange, id }) {
+function TagInput({
+  value = [],
+  onChange,
+  id
+}: {
+  value: string[] | string;
+  onChange: (tags: string[]) => void;
+  id: string;
+}): ReactElement {
   const [inputValue, setInputValue] = useState('');
 
-  const handleAddTag = (event) => {
+  // Ensure value is always an array
+  const tags = Array.isArray(value) ? value : value ? [value] : [];
+
+  const handleAddTag = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && inputValue.trim() !== '') {
       event.preventDefault();
-      if (!value.includes(inputValue.trim())) {
-        onChange([...value, inputValue.trim()]);
+      if (!tags.includes(inputValue.trim())) {
+        onChange([...tags, inputValue.trim()]);
       }
       setInputValue('');
     }
   };
 
-  const handleRemoveTag = (tagToRemove) => {
-    onChange(value.filter((tag) => tag !== tagToRemove));
+  const handleRemoveTag = (tagToRemove: string) => {
+    onChange(tags.filter((tag) => tag !== tagToRemove));
   };
 
   return (
     <div>
       <div>
-        {value.map((tag, index) => (
+        {tags.map((tag, index) => (
           <div key={index}>
             <span>{tag}</span>
             <button type="button" onClick={() => handleRemoveTag(tag)}>
@@ -2013,10 +2312,23 @@ const basicSchema = z.object({
     .lte(120, { message: 'Age must be at less than 120' })
 });
 
-export function ZodBasicValidation({ onSubmit }) {
-  const [errors, setErrors] = useState({});
+type ZodBasicValidationType = z.infer<typeof basicSchema>;
 
-  function handleSubmit(formData) {
+type ZodBasicValidationErrors = {
+  username?: string[];
+  email?: string[];
+  password?: string[];
+  age?: string[];
+};
+
+export function ZodBasicValidation({
+  onSubmit
+}: {
+  onSubmit: (data: ZodBasicValidationType) => void;
+}): ReactElement {
+  const [errors, setErrors] = useState<ZodBasicValidationErrors>({});
+
+  function handleSubmit(formData: FormData) {
     const data = Object.fromEntries(formData);
 
     const validation = basicSchema.safeParse(data);
@@ -2027,7 +2339,12 @@ export function ZodBasicValidation({ onSubmit }) {
     }
 
     if (validation.success) {
-      onSubmit(data);
+      const username = formData.get('username') as string;
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+      const age = Number(formData.get('age'));
+
+      onSubmit({ username, email, password, age });
     }
   }
 
@@ -2100,17 +2417,25 @@ const hookFormSchema = z.object({
     .optional()
 });
 
-export function ZodWithReactHookForm({ onSubmit }) {
+type ZodWithReactHookFormType = z.infer<typeof hookFormSchema>;
+
+export function ZodWithReactHookForm({
+  onSubmit
+}: {
+  onSubmit: (data: ZodWithReactHookFormType) => void;
+}): ReactElement {
   const {
     register,
     handleSubmit,
     formState: { errors, isValidating },
     watch
-  } = useForm({ resolver: zodResolver(hookFormSchema) });
+  } = useForm<ZodWithReactHookFormType>({
+    resolver: zodResolver(hookFormSchema)
+  });
 
   const watchBio = watch('bio');
 
-  function onSubmitForm(data) {
+  function onSubmitForm(data: ZodWithReactHookFormType) {
     onSubmit(data);
   }
 
@@ -2135,7 +2460,7 @@ export function ZodWithReactHookForm({ onSubmit }) {
       <label htmlFor="bio">Bio</label>
       <input id="bio" {...register('bio')} />
       <p data-testid="bio-remaining">
-        Remaining characters: {500 - watchBio?.length}
+        Remaining characters: {500 - (watchBio?.length ?? 0)}
       </p>
       {errors.bio?.message && <span role="alert">{errors.bio?.message}</span>}
 
@@ -2200,16 +2525,30 @@ const customRefinedSchema = z
   .superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {
       ctx.addIssue({
+        code: 'custom',
         path: ['confirmPassword'],
         message: 'Passwords must match'
       });
     }
   });
 
-export function ZodCustomRefinements({ onSubmit }) {
-  const [errors, setErrors] = useState({});
+type ZodCustomRefinementsType = z.infer<typeof customRefinedSchema>;
 
-  function handleSubmit(formData) {
+type ZodCustomRefinementsError = {
+  password?: string[];
+  confirmPassword?: string[];
+  birthDate?: string[];
+  agreeToTerms?: string[];
+};
+
+export function ZodCustomRefinements({
+  onSubmit
+}: {
+  onSubmit: (data: ZodCustomRefinementsType) => void;
+}): ReactElement {
+  const [errors, setErrors] = useState<ZodCustomRefinementsError>({});
+
+  function handleSubmit(formData: FormData) {
     const data = Object.fromEntries(formData);
     const validation = customRefinedSchema.safeParse(data);
 
@@ -2219,7 +2558,17 @@ export function ZodCustomRefinements({ onSubmit }) {
     }
 
     if (validation.success) {
-      onSubmit(data);
+      const password = formData.get('password') as string;
+      const confirmPassword = formData.get('confirmPassword') as string;
+      const birthDate = formData.get('birthDate') as string;
+      const agreeToTerms = formData.get('agreeToTerms') === 'on';
+
+      onSubmit({
+        password,
+        confirmPassword,
+        birthDate,
+        agreeToTerms
+      });
     }
   }
 
@@ -2282,19 +2631,25 @@ export function ZodCustomRefinements({ onSubmit }) {
  */
 const transformSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  phone: z.preprocess((val) => {
-    if (typeof val !== 'string') return val;
-    return val
-      .split('')
-      .filter((char) => /[0-9]/.test(char))
-      .join('');
-  }, z.string().length(10, { message: 'Phone must be exactly 10 digits' })),
-  price: z.preprocess((val) => {
-    if (typeof val === 'string') {
-      return Number.parseFloat(val);
-    }
-    return val;
-  }, z.number().positive({ message: 'Price must be positive' })),
+  phone: z.preprocess(
+    (val) => {
+      if (typeof val !== 'string') return val;
+      return val
+        .split('')
+        .filter((char) => /[0-9]/.test(char))
+        .join('');
+    },
+    z.string().length(10, { message: 'Phone must be exactly 10 digits' })
+  ),
+  price: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        return Number.parseFloat(val);
+      }
+      return val;
+    },
+    z.number().positive({ message: 'Price must be positive' })
+  ),
   tags: z.string().transform((val) => {
     return val
       .split(',')
@@ -2303,17 +2658,30 @@ const transformSchema = z.object({
   })
 });
 
-export function ZodTransforms({ onSubmit }) {
-  const [fields, setFields] = useState([]);
-  const [errors, setErrors] = useState({});
-  const [data, setData] = useState({});
-  const [transformedData, setTransformedData] = useState({});
+type ZodTransformsType = z.infer<typeof transformSchema>;
 
-  function handleSubmit(formData) {
-    const data = Object.fromEntries(formData);
-    const validation = transformSchema.safeParse(data);
-    setData(data);
-    setTransformedData(validation.data);
+type ZodTransformsErrors = {
+  email?: string[];
+  phone?: string[];
+  price?: string[];
+};
+
+export function ZodTransforms({
+  onSubmit
+}: {
+  onSubmit: (data: ZodTransformsType) => void;
+}): ReactElement {
+  const [fields, setFields] = useState<string[]>([]);
+  const [errors, setErrors] = useState<ZodTransformsErrors>({});
+  const [data, setData] = useState({});
+  const [transformedData, setTransformedData] =
+    useState<ZodTransformsType | null>(null);
+
+  function handleSubmit(formData: FormData) {
+    const fdata = Object.fromEntries(formData);
+    const validation = transformSchema.safeParse({
+      ...fdata
+    });
 
     if (!validation.success) {
       const flattened = z.flattenError(validation.error);
@@ -2321,6 +2689,8 @@ export function ZodTransforms({ onSubmit }) {
     }
 
     if (validation.success) {
+      setData(fdata);
+      setTransformedData(validation.data);
       onSubmit(validation.data);
     }
   }
@@ -2371,14 +2741,14 @@ export function ZodTransforms({ onSubmit }) {
 /**
  * Validate email format.
  */
-export function isValidEmail(email) {
+export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
  * Validate password strength.
  */
-export function validatePassword(password) {
+export function validatePassword(password: string): string[] {
   const errors = [];
   if (password.length < 8)
     errors.push('Password must be at least 8 characters');
@@ -2391,7 +2761,7 @@ export function validatePassword(password) {
 /**
  * Format file size for display.
  */
-export function formatFileSize(bytes) {
+export function formatFileSize(bytes: number) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB'];
@@ -2402,7 +2772,7 @@ export function formatFileSize(bytes) {
 /**
  * Check string is alphanumeric
  */
-function isAlphaNumeric(str) {
+function isAlphaNumeric(str: string) {
   return str
     .split('')
     .every(

@@ -73,7 +73,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Provider pattern variations ✅
 - Inversion of control patterns ✅
 
-### 8. Forms and Validation (react-forms.jsx)
+### 8. Forms and Validation (react-forms.tsx)
 
 - Controlled form patterns ✅
 - Form validation strategies ✅

@@ -12,7 +12,14 @@
  *
  */
 
-import { useState, useRef, useActionState, useEffect } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useActionState,
+  FormEvent,
+  ReactElement
+} from 'react';
 import { useFormStatus } from 'react-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import * as z from 'zod';
@@ -681,14 +688,14 @@ export function ZodTransforms({ onSubmit }) {
 /**
  * Validate email format.
  */
-export function isValidEmail(email) {
+export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
  * Validate password strength.
  */
-export function validatePassword(password) {
+export function validatePassword(password: string): string[] {
   const errors = [];
   if (password.length < 8)
     errors.push('Password must be at least 8 characters');
@@ -701,7 +708,7 @@ export function validatePassword(password) {
 /**
  * Format file size for display.
  */
-export function formatFileSize(bytes) {
+export function formatFileSize(bytes: number) {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB'];
@@ -712,7 +719,7 @@ export function formatFileSize(bytes) {
 /**
  * Check string is alphanumeric
  */
-function isAlphaNumeric(str) {
+function isAlphaNumeric(str: string) {
   return str
     .split('')
     .every(
