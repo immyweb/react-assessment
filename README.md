@@ -43,7 +43,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Context optimization techniques ✅
 - Custom context hooks ✅
 
-### 5. Advanced Hooks (react-hooks.jsx)
+### 5. Advanced Hooks (react-hooks.tsx)
 
 - useMemo and useCallback optimization ✅
 - useRef for DOM access and values ✅
@@ -63,7 +63,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Render optimization patterns ✅
 - Performance measurement tools ❌
 
-### 7. Advanced Patterns (react-patterns.jsx)
+### 7. Advanced Patterns (react-patterns.tsx)
 
 - Higher-Order Components (HOCs) ✅
 - Render props pattern ✅

@@ -9,15 +9,15 @@
  * - Headless component patterns
  * - Provider pattern variations
  * - Inversion of control patterns
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
-import React, { useState, useContext, createContext } from 'react';
+import React, {
+  useState,
+  useContext,
+  createContext,
+  ReactElement,
+  FormEvent
+} from 'react';
 
 // =============================================================================
 // EXERCISE 1: Higher-Order Components (HOCs)
@@ -37,13 +37,15 @@ import React, { useState, useContext, createContext } from 'react';
  * - Renders wrapped component when isLoading=false
  * - Passes all other props to wrapped component
  */
-export function withLoading(WrappedComponent) {
-  return function withLoading({ isLoading, ...props }) {
+export function withLoading<P extends object>(
+  WrappedComponent: React.ComponentType<P>
+) {
+  return function WithLoading(props: P & { isLoading?: boolean }) {
+    const { isLoading, ...rest } = props;
     if (isLoading) {
       return <div>Loading...</div>;
     }
-
-    return <WrappedComponent {...props} />;
+    return <WrappedComponent {...(rest as P)} />;
   };
 }
 
@@ -61,8 +63,15 @@ export function withLoading(WrappedComponent) {
  * - Displays "Clicked X times" text
  * - Wraps original onClick handler
  */
-export function withClickCounter(WrappedComponent) {
-  return function clickCounter({ ...props }) {
+export function withClickCounter<P extends object>(
+  WrappedComponent: React.ComponentType<P>
+) {
+  return function clickCounter(
+    props: Omit<P, 'onClick' | 'clickCount' | 'resetCount'> & {
+      onClick?: () => void;
+      resetCount?: () => void;
+    }
+  ) {
     const [count, setCount] = useState(0);
 
     function onClick() {
@@ -81,10 +90,10 @@ export function withClickCounter(WrappedComponent) {
 
     return (
       <WrappedComponent
+        {...(props as P)}
         onClick={onClick}
         clickCount={count}
         resetCount={onReset}
-        {...props}
       />
     );
   };
@@ -115,7 +124,20 @@ export function withClickCounter(WrappedComponent) {
  * - Provides count and functions to children
  * - Children can render count however they want
  */
-export function Counter({ initialCount = 0, children }) {
+type CounterRenderProps = {
+  count: number;
+  increment: () => void;
+  decrement: () => void;
+  reset: () => void;
+};
+
+export function Counter({
+  initialCount = 0,
+  children
+}: {
+  initialCount?: number;
+  children: (props: CounterRenderProps) => React.ReactNode;
+}) {
   const [count, setCount] = useState(initialCount);
 
   function increment() {
@@ -152,8 +174,21 @@ export function Counter({ initialCount = 0, children }) {
  * - Provides toggle function to children
  * - Allows setting initial state
  */
-export function Toggle({ initialValue = false, children }) {
-  const [isOn, setIsOn] = useState(initialValue);
+type ToggleRenderProps = {
+  isOn: boolean;
+  toggle: () => void;
+  turnOn: () => void;
+  turnOff: () => void;
+};
+
+export function Toggle({
+  initialValue = false,
+  children
+}: {
+  initialValue: boolean;
+  children: (props: ToggleRenderProps) => React.ReactNode;
+}) {
+  const [isOn, setIsOn] = useState<boolean>(initialValue);
 
   function toggle() {
     setIsOn(!isOn);
@@ -197,11 +232,25 @@ export function Toggle({ initialValue = false, children }) {
  * - Header, body, footer render in correct sections
  * - Modal can be opened/closed from any part
  */
+type ModalContextType = {
+  isOpen: boolean;
+  onClose: () => void;
+};
 
-// Create context for modal state
-const ModalContext = createContext();
+const ModalContext = createContext<ModalContextType>({
+  isOpen: false,
+  onClose: () => {}
+});
 
-export function Modal({ children, isOpen = false, onClose }) {
+export function Modal({
+  children,
+  isOpen = false,
+  onClose
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   if (!isOpen) return null;
 
   return (
@@ -214,23 +263,40 @@ export function Modal({ children, isOpen = false, onClose }) {
   );
 }
 
-export function ModalHeader({ children }) {
+export function ModalHeader({ children }: { children: React.ReactNode }) {
   return <div className="modal-header">{children}</div>;
 }
 
-export function ModalBody({ children }) {
+export function ModalBody({ children }: { children: React.ReactNode }) {
   return <div className="modal-body">{children}</div>;
 }
 
-export function ModalFooter({ children }) {
+type ModalFooterChildProps = {
+  onClose: () => void;
+};
+
+export function ModalFooter({ children }: { children: React.ReactNode }) {
   const { onClose } = useContext(ModalContext);
-  // Pass onClose to children if needed, or just render children
-  return React.Children.map(children, (child) =>
-    React.isValidElement(child) ? React.cloneElement(child, { onClose }) : child
-  );
+  // Only add onClose to custom components, not DOM elements
+  return React.Children.map(children, (child) => {
+    if (React.isValidElement(child) && typeof child.type !== 'string') {
+      // Type assertion: we know our pattern expects onClose
+      return React.cloneElement(
+        child as React.ReactElement<ModalFooterChildProps>,
+        { onClose }
+      );
+    }
+    return child;
+  });
 }
 
-export function ModalCloseButton({ children, onClose }) {
+export function ModalCloseButton({
+  children,
+  onClose
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
   return <button onClick={onClose}>{children}</button>;
 }
 
@@ -258,19 +324,43 @@ Modal.CloseButton = ModalCloseButton;
  *   </Card.Footer>
  * </Card>
  */
-export function Card({ children, className = '' }) {
+export function Card({
+  children,
+  className = ''
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <div className={className}>{children}</div>;
 }
 
-export function CardHeader({ children, className = '' }) {
+export function CardHeader({
+  children,
+  className = ''
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <h3 className={className}>{children}</h3>;
 }
 
-export function CardBody({ children, className = '' }) {
+export function CardBody({
+  children,
+  className = ''
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <p className={className}>{children}</p>;
 }
 
-export function CardFooter({ children, className = '' }) {
+export function CardFooter({
+  children,
+  className = ''
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return <p className={className}>{children}</p>;
 }
 
@@ -298,18 +388,24 @@ Card.Footer = CardFooter;
  * - Forwards appropriate props to rendered element
  * - Maintains consistent button styling
  */
-export function Button({
-  as: Component = 'button',
+type ButtonProps<T extends React.ElementType = 'button'> = {
+  as?: T;
+  variant?: string;
+  children: React.ReactNode;
+} & Omit<React.ComponentPropsWithoutRef<T>, 'as' | 'children'>;
+
+export function Button<T extends React.ElementType = 'button'>({
+  as,
   variant,
   children,
   ...props
-}) {
-  const Element = Component ?? 'button';
+}: ButtonProps<T>): ReactElement {
+  const Component = as || 'button';
 
   return (
-    <Element className={variant} {...props}>
+    <Component className={variant} {...props}>
       {children}
-    </Element>
+    </Component>
   );
 }
 
@@ -328,19 +424,27 @@ export function Button({
  * - Applies size classes for styling
  * - Forwards all other props
  */
-export function Text({
-  as: Component = 'p',
-  size = 'medium',
+type TextProps<T extends React.ElementType = 'p'> = {
+  as?: T;
+  size?: string;
+  children: React.ReactNode;
+} & Omit<React.ComponentPropsWithoutRef<T>, 'as' | 'children' | 'className'> & {
+    className?: string;
+  };
+
+export function Text<T extends React.ElementType = 'p'>({
+  as,
+  size,
   children,
   className = '',
   ...props
-}) {
-  const Element = Component;
+}: TextProps<T>): ReactElement {
+  const Component = as || 'p';
 
   return (
-    <Element className={`${className} ${size}`} {...props}>
+    <Component className={`${className} ${size}`} {...props}>
       {children}
-    </Element>
+    </Component>
   );
 }
 
@@ -370,8 +474,21 @@ export function Text({
  * - Provides count value and control functions
  * - Allows complete UI customization
  */
-export function HeadlessCounter({ initialValue = 0, children }) {
-  const [count, setCount] = useState(initialValue);
+type HeadlessCounterType = {
+  count: number;
+  increment: () => void;
+  decrement: () => void;
+  reset: () => void;
+};
+
+export function HeadlessCounter({
+  initialValue = 0,
+  children
+}: {
+  initialValue: number;
+  children: (props: HeadlessCounterType) => React.ReactNode;
+}) {
+  const [count, setCount] = useState<number>(initialValue);
 
   function increment() {
     setCount(count + 1);
@@ -407,7 +524,20 @@ export function HeadlessCounter({ initialValue = 0, children }) {
  * - Provides toggle state and control functions
  * - Allows custom toggle implementations
  */
-export function HeadlessToggle({ initialValue = false, children }) {
+type HeadlessToggleType = {
+  isOn: boolean;
+  toggle: () => void;
+  turnOn: () => void;
+  turnOff: () => void;
+};
+
+export function HeadlessToggle({
+  initialValue = false,
+  children
+}: {
+  initialValue: boolean;
+  children: (props: HeadlessToggleType) => React.ReactNode;
+}) {
   const [isOn, setIsOn] = useState(initialValue);
 
   function toggle() {
@@ -444,10 +574,34 @@ export function HeadlessToggle({ initialValue = false, children }) {
  * - Includes light/dark theme switching
  * - Provides useTheme hook for consumption
  */
+type ThemeType = {
+  name: string;
+  color: string;
+};
 
-const ThemeContext = createContext();
+type ThemeContextType = {
+  currentTheme: ThemeType;
+  themes: {
+    light: ThemeType;
+    dark: ThemeType;
+  };
+  toggleTheme: () => void;
+};
 
-export function ThemeProvider({ children }) {
+const ThemeContext = createContext<ThemeContextType>({
+  currentTheme: { name: 'light', color: '#fff' },
+  themes: {
+    light: { name: 'light', color: '#fff' },
+    dark: { name: 'dark', color: '#000' }
+  },
+  toggleTheme: () => {}
+});
+
+export function ThemeProvider({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
   const themes = {
     light: { name: 'light', color: '#fff' },
     dark: { name: 'dark', color: '#000' }
@@ -489,25 +643,48 @@ export function useTheme() {
  * - Provides login/logout functions
  * - Includes user data when authenticated
  */
+type UserType = {
+  name: string;
+  email: string;
+};
 
-const UserContext = createContext();
+type UserContextType = {
+  user: UserType | null;
+  isAuthenticated: boolean;
+  login: ({ name, email }: { name: string; email: string }) => void;
+  logout: () => void;
+};
 
-export function UserProvider({ children }) {
-  const [user, setUser] = useState(null);
+const UserContext = createContext<UserContextType>({
+  user: null,
+  isAuthenticated: false,
+  login: () => {},
+  logout: () => {}
+});
 
-  function login({ name, email }) {
+export function UserProvider({
+  children
+}: {
+  children: React.ReactNode;
+}): ReactElement {
+  const [user, setUser] = useState<UserType | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  function login({ name, email }: UserType) {
     setUser({
       name,
       email
     });
+    setIsAuthenticated(true);
   }
 
   function logout() {
     setUser(null);
+    setIsAuthenticated(false);
   }
 
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
+    <UserContext.Provider value={{ user, isAuthenticated, login, logout }}>
       {children}
     </UserContext.Provider>
   );
@@ -547,12 +724,25 @@ export function useUser() {
  * - Calls provided handlers for events
  * - Supports validation and error states
  */
+type ConfigurableButtonType = {
+  config: {
+    variant: string;
+    size: string;
+    disabled: boolean;
+  };
+  handlers: {
+    onClick: () => void;
+    onHover: () => void;
+  };
+  children: React.ReactNode;
+};
+
 export function ConfigurableButton({
-  config = {},
-  handlers = {},
+  config,
+  handlers,
   children,
   ...props
-}) {
+}: ConfigurableButtonType) {
   const { variant = 'primary', size = 'medium', disabled = false } = config;
   const { onClick, onHover } = handlers;
 
@@ -590,18 +780,32 @@ export function ConfigurableButton({
  * - Handles validation through provided function
  * - Calls onSubmit with form data
  */
+type FieldType = {
+  name: string;
+  type: string;
+  label: string;
+  required: boolean;
+};
+
+type ValuesType = { [key: string]: string };
+type ErrorsType = { [key: string]: string };
+
 export function ConfigurableForm({
-  fields = [],
+  fields,
   onSubmit,
   validate,
   ...props
+}: {
+  fields: FieldType[];
+  onSubmit: (values: ValuesType) => void;
+  validate: (values: ValuesType) => ErrorsType;
 }) {
-  const [values, setValues] = useState({});
-  const [errors, setErrors] = useState({});
+  const [values, setValues] = useState<ValuesType>({});
+  const [errors, setErrors] = useState<ErrorsType>({});
 
   let inputs;
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: FormEvent) {
     evt.preventDefault();
 
     if (validate) {
@@ -613,7 +817,7 @@ export function ConfigurableForm({
     }
   }
 
-  function validateInput(name, value) {
+  function validateInput(name: string, value: string) {
     if (validate) {
       setErrors(validate({ [name]: value }));
     }

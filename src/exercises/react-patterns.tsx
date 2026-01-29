@@ -9,24 +9,15 @@
  * - Headless component patterns
  * - Provider pattern variations
  * - Inversion of control patterns
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import React, {
   useState,
-  useEffect,
   useContext,
   createContext,
-  useCallback,
-  Children,
-  cloneElement
+  ReactElement,
+  FormEvent
 } from 'react';
-import PropTypes from 'prop-types';
 
 // =============================================================================
 // EXERCISE 1: Higher-Order Components (HOCs)
