@@ -9,15 +9,15 @@
  * - Graceful degradation
  * - Development vs production errors
  * - Error boundary composition
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
  */
 
-import React, { Component, useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  Component,
+  useState,
+  useEffect,
+  ErrorInfo,
+  ComponentType
+} from 'react';
 
 // =============================================================================
 // EXERCISE 1: Basic Error Boundary

@@ -1,20 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
 import {
   ErrorBoundary,
   BrokenComponent,
   ErrorRecoveryComponent,
   AsyncErrorHandler,
   withErrorReporting,
-  useErrorReporting,
   ErrorReportingExample,
   GracefulDegradation,
   EnvironmentAwareErrorHandler,
   NetworkErrorBoundary,
-  ValidationErrorBoundary,
-  ComposedErrorExample
-} from '../exercises/react-errors';
+  ValidationErrorBoundary
+} from '../answers/react-errors';
 
 // Helper function to suppress expected console errors in tests
 const suppressConsoleErrors = () => {
@@ -91,7 +88,7 @@ describe('ErrorRecoveryComponent', () => {
 
 describe('AsyncErrorHandler', () => {
   const mockEndpoint = 'https://api.example.com/data';
-  let originalFetch;
+  let originalFetch: typeof global.fetch;
 
   beforeEach(() => {
     originalFetch = global.fetch;
@@ -103,13 +100,13 @@ describe('AsyncErrorHandler', () => {
   });
 
   it('shows loading state initially', () => {
-    global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+    vi.mocked(global.fetch).mockImplementationOnce(() => new Promise(() => {}));
     const { getByText } = render(<AsyncErrorHandler endpoint={mockEndpoint} />);
     expect(getByText(/loading/i)).toBeInTheDocument();
   });
 
   it('shows error state when fetch fails', async () => {
-    global.fetch.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'));
     const { findByText } = render(
       <AsyncErrorHandler endpoint={mockEndpoint} />
     );
@@ -117,16 +114,18 @@ describe('AsyncErrorHandler', () => {
   });
 
   it('allows retry after failure', async () => {
-    global.fetch.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(global.fetch).mockRejectedValueOnce(new Error('Network error'));
     const { findByText, getByText } = render(
       <AsyncErrorHandler endpoint={mockEndpoint} />
     );
 
     await findByText(/failed/i);
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ data: 'Success' })
-    });
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: 'Success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
 
     fireEvent.click(getByText(/retry/i));
     expect(await findByText(/success/i)).toBeInTheDocument();
@@ -220,15 +219,15 @@ describe('EnvironmentAwareErrorHandler', () => {
   });
 });
 
-describe.only('Error Boundary Composition', () => {
+describe('Error Boundary Composition', () => {
   suppressConsoleErrors();
 
   it('handles network errors in NetworkErrorBoundary', () => {
     // Use the custom NetworkError class from the solution
     class NetworkError extends Error {
-      constructor(message, field) {
-        super();
-        this.message = message;
+      field: string;
+      constructor(message: string, field: string) {
+        super(message);
         this.field = field;
         this.name = 'NetworkError';
       }
@@ -249,9 +248,9 @@ describe.only('Error Boundary Composition', () => {
   it('handles validation errors in ValidationErrorBoundary', () => {
     // Use the custom ValidationError class from the solution
     class ValidationError extends Error {
-      constructor(message, field) {
-        super();
-        this.message = message;
+      field: string;
+      constructor(message: string, field: string) {
+        super(message);
         this.field = field;
         this.name = 'ValidationError';
       }

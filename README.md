@@ -90,7 +90,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Form state management ❌
 - Custom form hooks ❌
 
-### 10. Error Handling (react-errors.jsx)
+### 10. Error Handling (react-errors.tsx)
 
 - Error boundaries ✅
 - Error recovery strategies ✅
@@ -145,7 +145,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Type guards and narrowing ✅
 - Utility types (Pick, Omit, Partial, Required) ✅
 
-### 16. Testing Patterns (react-testing.js)
+### 16. Testing Patterns (react-testing.jsx)
 
 - Component testing strategies
 - Hook testing patterns

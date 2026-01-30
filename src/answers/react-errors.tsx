@@ -9,15 +9,15 @@
  * - Graceful degradation
  * - Development vs production errors
  * - Error boundary composition
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
  */
 
-import React, { Component, useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  Component,
+  useState,
+  useEffect,
+  ErrorInfo,
+  ComponentType
+} from 'react';
 
 // =============================================================================
 // EXERCISE 1: Basic Error Boundary
@@ -36,17 +36,28 @@ import PropTypes from 'prop-types';
  *   <ComponentThatMightError />
  * </ErrorBoundary>
  */
-export class ErrorBoundary extends Component {
-  constructor(props) {
+type ErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type ErrorBoundaryState = {
+  hasError: boolean;
+};
+
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: unknown, info: { componentStack: string }) {
     console.error(error, info.componentStack, React.captureOwnerStack());
   }
 
@@ -122,10 +133,10 @@ export function ErrorRecoveryComponent() {
  * Example usage:
  * <AsyncErrorHandler endpoint="https://api.example.com/data" />
  */
-export function AsyncErrorHandler({ endpoint }) {
+export function AsyncErrorHandler({ endpoint }: { endpoint: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<{ data: string } | null>(null);
   const [reset, setReset] = useState(false);
 
   useEffect(() => {
@@ -171,10 +182,6 @@ export function AsyncErrorHandler({ endpoint }) {
   return <div>No data found</div>;
 }
 
-AsyncErrorHandler.propTypes = {
-  endpoint: PropTypes.string.isRequired
-};
-
 // =============================================================================
 // EXERCISE 4: Error Reporting Pattern
 // =============================================================================
@@ -192,9 +199,16 @@ AsyncErrorHandler.propTypes = {
  *   <YourComponent />
  * </ErrorReporter>
  */
-export function withErrorReporting(WrappedComponent) {
-  return class ErrorBoundary extends Component {
-    constructor(props) {
+type WithErrorReportingStateType = {
+  hasError: boolean;
+  errorMessage: string;
+  errorComp: string;
+  errorStackTrace: string;
+};
+
+export function withErrorReporting<P>(WrappedComponent: ComponentType<P>) {
+  return class ErrorBoundary extends Component<P, WithErrorReportingStateType> {
+    constructor(props: P) {
       super(props);
       this.state = {
         hasError: false,
@@ -204,18 +218,18 @@ export function withErrorReporting(WrappedComponent) {
       };
     }
 
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(error: unknown) {
       return {
         hasError: true
       };
     }
 
-    componentDidCatch(error, info) {
+    componentDidCatch(error: any, info: ErrorInfo) {
       console.error(error, info.componentStack, React.captureOwnerStack());
       this.setState({
-        errorMessage: error,
-        errorComp: info.componentStack,
-        errorStackTrace: error.stack
+        errorMessage: error?.toString?.() ?? '',
+        errorComp: info.componentStack ?? '',
+        errorStackTrace: error?.stack ?? ''
       });
     }
 
@@ -238,7 +252,7 @@ export function withErrorReporting(WrappedComponent) {
         );
       }
 
-      return <WrappedComponent />;
+      return <WrappedComponent {...this.props} />;
     }
   };
 }
@@ -250,11 +264,11 @@ export function useErrorReporting() {
   const [errorComp, setErrorComp] = useState('');
   const [errorStackTrace, setErrorStackTrace] = useState('');
 
-  function reportError(error, info) {
+  function reportError(error: any, info: ErrorInfo) {
     setHasError(true);
     setErrorMessage(error.message);
     if (info) {
-      setErrorComp(info.componentStack);
+      setErrorComp(info.componentStack ?? '');
     }
     setErrorStackTrace(error.stack);
   }
@@ -274,7 +288,10 @@ export function ErrorReportingExample() {
     try {
       callNonExistantFunction();
     } catch (err) {
-      reportError(err);
+      reportError(err, {
+        componentStack:
+          'Error triggered in handleClick() of ErrorReportingExample'
+      });
     }
   }
 
@@ -306,25 +323,40 @@ export function ErrorReportingExample() {
  * Example usage:
  * <GracefulDegradation />
  */
+type GeolocationType = {
+  coords: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
 export function GracefulDegradation() {
   const [items, setItems] = useState([]);
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   // Localstorage
   useEffect(() => {
     try {
-      const items = JSON.parse(localStorage.getItem('items'));
-      if (items) {
+      const itemsStr = localStorage.getItem('items');
+      if (itemsStr) {
+        const items = JSON.parse(itemsStr);
         setItems(items);
       }
-    } catch (err) {
-      console.log(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error(err.message);
+      } else {
+        console.error('An unexpected error occurred:', err);
+      }
     }
   }, []);
 
   // Geolocation
   useEffect(() => {
-    function success(position) {
+    function success(position: GeolocationType) {
       setLocation({
         lat: position.coords.latitude,
         lng: position.coords.longitude
@@ -345,7 +377,7 @@ export function GracefulDegradation() {
   function isLocalStorageEnabled() {
     try {
       const key = `__storage__test`;
-      window.localStorage.setItem(key, null);
+      window.localStorage.setItem(key, '');
       window.localStorage.removeItem(key);
       return true;
     } catch (e) {
@@ -400,21 +432,25 @@ export function GracefulDegradation() {
  */
 export function EnvironmentAwareErrorHandler() {
   const [hasError, setHasError] = useState(false);
-  const [errStack, setErrStack] = useState('');
+  const [errStack, setErrStack] = useState<string | undefined>('');
 
   const { NODE_ENV } = process.env;
 
   function handleClick() {
     try {
       callNonExistantFunction();
-    } catch (err) {
+    } catch (err: unknown) {
       setHasError(true);
       if (NODE_ENV === 'production') {
         // Send to external service
       }
       if (NODE_ENV === 'development') {
-        console.log(err.message, err.stack);
-        setErrStack(err.stack);
+        if (err instanceof Error) {
+          console.log(err.message, err.stack);
+          setErrStack(err.stack);
+        } else {
+          console.error('An unexpected error occurred:', err);
+        }
       }
     }
   }
@@ -460,21 +496,35 @@ export function EnvironmentAwareErrorHandler() {
  */
 
 class NetworkError extends Error {
-  constructor(message, field) {
-    super();
-    this.message = message;
+  field: string;
+
+  constructor(message: string, field: string) {
+    super(message);
     this.field = field;
     this.name = 'NetworkError';
   }
 }
 
-export class NetworkErrorBoundary extends Component {
-  constructor(props) {
+type NetworkErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type NetworkErrorBoundaryState = {
+  hasError: boolean;
+};
+
+export class NetworkErrorBoundary extends Component<
+  NetworkErrorBoundaryProps,
+  NetworkErrorBoundaryState
+> {
+  constructor(props: NetworkErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(
+    error: any
+  ): NetworkErrorBoundaryState | null {
     if (error.name === 'NetworkError') {
       return { hasError: true };
     }
@@ -482,7 +532,7 @@ export class NetworkErrorBoundary extends Component {
     return null;
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: any, info: { componentStack: string }) {
     if (error.name === 'NetworkError') {
       console.error(error, info.componentStack, React.captureOwnerStack());
     }
@@ -498,21 +548,33 @@ export class NetworkErrorBoundary extends Component {
 }
 
 class ValidationError extends Error {
-  constructor(message, field) {
-    super();
-    this.message = message;
+  field: string;
+
+  constructor(message: string, field: string) {
+    super(message);
     this.field = field;
     this.name = 'ValidationError';
   }
 }
 
-export class ValidationErrorBoundary extends Component {
-  constructor(props) {
+type ValidationErrorBoundaryProps = {
+  children: React.ReactNode;
+};
+
+type ValidationErrorBoundaryState = {
+  hasError: boolean;
+};
+
+export class ValidationErrorBoundary extends Component<
+  ValidationErrorBoundaryProps,
+  ValidationErrorBoundaryState
+> {
+  constructor(props: ValidationErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: any) {
     if (error.name === 'ValidationError') {
       return { hasError: true };
     }
@@ -520,7 +582,7 @@ export class ValidationErrorBoundary extends Component {
     return null;
   }
 
-  componentDidCatch(error, info) {
+  componentDidCatch(error: any, info: { componentStack: string }) {
     if (error.name === 'ValidationError') {
       console.error(error, info.componentStack, React.captureOwnerStack());
     }
