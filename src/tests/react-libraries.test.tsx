@@ -32,9 +32,9 @@ import {
   createThemeStore,
   ZustandCounter,
   createAsyncStore
-} from '../answers/react-libraries';
-import counterReducer, * as counterActions from '../answers/react-libraries';
-import todosReducer, * as todosActions from '../answers/react-libraries';
+} from '../exercises/react-libraries';
+import counterReducer, * as counterActions from '../exercises/react-libraries';
+import todosReducer, * as todosActions from '../exercises/react-libraries';
 
 // ============================================================================
 // Exercise 1: Axios Tests
