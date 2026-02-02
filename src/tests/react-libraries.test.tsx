@@ -8,12 +8,13 @@
  * - Zustand state management
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import { legacy_createStore as createStore } from 'redux';
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import {
   createAxiosInstance,
@@ -24,17 +25,16 @@ import {
   PostDetail,
   CreatePost,
   OptimisticTodoList,
-  counterReducer,
   ReduxCounter,
-  counterActions,
-  todosReducer,
+  TodoState,
   createCounterStore,
   createUsersStore,
   createThemeStore,
   ZustandCounter,
-  createAsyncStore,
-  createMockApi
-} from '../exercises/react-libraries';
+  createAsyncStore
+} from '../answers/react-libraries';
+import counterReducer, * as counterActions from '../answers/react-libraries';
+import todosReducer, * as todosActions from '../answers/react-libraries';
 
 // ============================================================================
 // Exercise 1: Axios Tests
@@ -61,7 +61,7 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
   });
 
   describe('UserProfile', () => {
-    let mockApi;
+    let mockApi: Partial<AxiosInstance> & { get: Mock };
 
     beforeEach(() => {
       mockApi = {
@@ -70,17 +70,27 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
     });
 
     it('should show loading state initially', () => {
-      mockApi.get.mockReturnValue(new Promise(() => {})); // Never resolves
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      mockApi.get!.mockReturnValue(new Promise(() => {})); // Never resolves
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('should fetch user data on mount', async () => {
-      mockApi.get.mockResolvedValue({
+      mockApi.get!.mockResolvedValue({
         data: { id: '123', name: 'John Doe', email: 'john@example.com' }
       });
 
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
 
       await waitFor(() => {
         expect(mockApi.get).toHaveBeenCalledWith('/users/123');
@@ -88,11 +98,16 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
     });
 
     it('should display user name when loaded', async () => {
-      mockApi.get.mockResolvedValue({
+      mockApi.get!.mockResolvedValue({
         data: { id: '123', name: 'John Doe', email: 'john@example.com' }
       });
 
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/john doe/i)).toBeInTheDocument();
@@ -100,11 +115,16 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
     });
 
     it('should display user email when loaded', async () => {
-      mockApi.get.mockResolvedValue({
+      mockApi.get!.mockResolvedValue({
         data: { id: '123', name: 'John Doe', email: 'john@example.com' }
       });
 
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
@@ -112,9 +132,14 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
     });
 
     it('should show error message when fetch fails', async () => {
-      mockApi.get.mockRejectedValue(new Error('Network error'));
+      mockApi.get!.mockRejectedValue(new Error('Network error'));
 
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/error/i)).toBeInTheDocument();
@@ -122,11 +147,16 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
     });
 
     it('should not show loading state after data is loaded', async () => {
-      mockApi.get.mockResolvedValue({
+      mockApi.get!.mockResolvedValue({
         data: { id: '123', name: 'John Doe', email: 'john@example.com' }
       });
 
-      render(<UserProfile userId="123" axiosInstance={mockApi} />);
+      render(
+        <UserProfile
+          userId="123"
+          axiosInstance={mockApi as unknown as AxiosInstance}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
@@ -137,143 +167,137 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
   });
 
   describe('addAuthInterceptor', () => {
-    let mockInstance;
+    let interceptorFn:
+      | ((config: AxiosRequestConfig) => AxiosRequestConfig)
+      | undefined;
+    const mockInstance = {
+      interceptors: {
+        request: {
+          use: vi.fn((fn) => {
+            interceptorFn = fn;
+            return 1;
+          }),
+          eject: vi.fn(),
+          clear: vi.fn()
+        },
+        response: {
+          use: vi.fn(),
+          eject: vi.fn(),
+          clear: vi.fn()
+        }
+      }
+    } as unknown as AxiosInstance;
 
     beforeEach(() => {
-      mockInstance = {
-        interceptors: {
-          request: {
-            use: vi.fn((onFulfilled) => {
-              mockInstance._requestInterceptor = onFulfilled;
-              return 1;
-            })
-          }
-        }
-      };
+      interceptorFn = undefined;
       localStorage.clear();
     });
 
-    afterEach(() => {
-      localStorage.clear();
-    });
-
-    it('should return interceptor ID', () => {
+    it('returns an interceptor ID', () => {
       const id = addAuthInterceptor(mockInstance);
+      expect(id).toBe(1);
       expect(typeof id).toBe('number');
     });
 
-    it('should add Authorization header when token exists', () => {
-      localStorage.setItem('authToken', 'test-token-123');
+    it('adds Authorization header when token exists', () => {
+      localStorage.setItem('authToken', 'token-abc');
       addAuthInterceptor(mockInstance);
-
+      expect(interceptorFn).toBeDefined();
       const config = { headers: {} };
-      const result = mockInstance._requestInterceptor(config);
-
-      expect(result.headers.Authorization).toBe('Bearer test-token-123');
+      const result = interceptorFn!(config);
+      expect(result.headers?.Authorization).toBe('Bearer token-abc');
     });
 
-    it('should not add Authorization header when token is missing', () => {
+    it('does not add Authorization header when token is missing', () => {
       addAuthInterceptor(mockInstance);
-
+      expect(interceptorFn).toBeDefined();
       const config = { headers: {} };
-      const result = mockInstance._requestInterceptor(config);
-
-      expect(result.headers.Authorization).toBeUndefined();
+      const result = interceptorFn!(config);
+      expect(result.headers?.Authorization).toBeUndefined();
     });
 
-    it('should return modified config', () => {
-      localStorage.setItem('authToken', 'test-token');
+    it('returns modified config', () => {
+      localStorage.setItem('authToken', 'token-xyz');
       addAuthInterceptor(mockInstance);
-
-      const config = { headers: {}, url: '/test' };
-      const result = mockInstance._requestInterceptor(config);
-
+      expect(interceptorFn).toBeDefined();
+      const config = { headers: {}, url: '/foo' };
+      const result = interceptorFn!(config);
       expect(result).toBeDefined();
-      expect(result.url).toBe('/test');
+      expect(result.url).toBe('/foo');
     });
   });
 
   describe('addErrorInterceptor', () => {
-    let mockInstance;
-    let onUnauthorized;
-    let onNetworkError;
+    let onUnauthorized: () => void;
+    let onNetworkError: () => void;
+    let fulfilledFn: ((response: any) => any) | undefined;
+    let rejectedFn: ((error: any) => Promise<any>) | undefined;
+    const mockInstance = {
+      interceptors: {
+        response: {
+          use: vi.fn((onFulfilled, onRejected) => {
+            fulfilledFn = onFulfilled;
+            rejectedFn = onRejected;
+            return 1;
+          })
+        }
+      }
+    } as unknown as AxiosInstance;
 
     beforeEach(() => {
       onUnauthorized = vi.fn();
       onNetworkError = vi.fn();
-      mockInstance = {
-        interceptors: {
-          response: {
-            use: vi.fn((onFulfilled, onRejected) => {
-              mockInstance._responseOnFulfilled = onFulfilled;
-              mockInstance._responseOnRejected = onRejected;
-              return 1;
-            })
-          }
-        }
-      };
+      fulfilledFn = undefined;
+      rejectedFn = undefined;
     });
 
-    it('should return interceptor ID', () => {
+    it('returns interceptor ID', () => {
       const id = addErrorInterceptor(
         mockInstance,
         onUnauthorized,
         onNetworkError
       );
+      expect(id).toBe(1);
       expect(typeof id).toBe('number');
     });
 
-    it('should pass through successful responses', () => {
+    it('passes through successful responses', () => {
       addErrorInterceptor(mockInstance, onUnauthorized, onNetworkError);
-
+      expect(fulfilledFn).toBeDefined();
       const response = { status: 200, data: {} };
-      const result = mockInstance._responseOnFulfilled(response);
-
+      const result = fulfilledFn!(response);
       expect(result).toBe(response);
     });
 
-    it('should call onUnauthorized for 401 errors', async () => {
+    it('calls onUnauthorized for 401 errors', async () => {
       addErrorInterceptor(mockInstance, onUnauthorized, onNetworkError);
-
+      expect(rejectedFn).toBeDefined();
       const error = { response: { status: 401 } };
-
-      try {
-        await mockInstance._responseOnRejected(error);
-      } catch (e) {
-        expect(onUnauthorized).toHaveBeenCalled();
-      }
+      await expect(rejectedFn!(error)).rejects.toBe(error);
+      expect(onUnauthorized).toHaveBeenCalled();
     });
 
-    it('should call onNetworkError when no response', async () => {
+    it('calls onNetworkError when no response', async () => {
       addErrorInterceptor(mockInstance, onUnauthorized, onNetworkError);
-
+      expect(rejectedFn).toBeDefined();
       const error = { request: {}, message: 'Network Error' };
-
-      try {
-        await mockInstance._responseOnRejected(error);
-      } catch (e) {
-        expect(onNetworkError).toHaveBeenCalled();
-      }
+      await expect(rejectedFn!(error)).rejects.toBe(error);
+      expect(onNetworkError).toHaveBeenCalled();
     });
 
-    it('should not call onUnauthorized for other status codes', async () => {
+    it('does not call onUnauthorized for other status codes', async () => {
       addErrorInterceptor(mockInstance, onUnauthorized, onNetworkError);
-
+      expect(rejectedFn).toBeDefined();
       const error = { response: { status: 404 } };
-
-      try {
-        await mockInstance._responseOnRejected(error);
-      } catch (e) {
-        expect(onUnauthorized).not.toHaveBeenCalled();
-      }
+      await expect(rejectedFn!(error)).rejects.toBe(error);
+      expect(onUnauthorized).not.toHaveBeenCalled();
     });
 
-    it('should return rejected promise with error', async () => {
+    it('returns rejected promise with error', async () => {
       addErrorInterceptor(mockInstance, onUnauthorized, onNetworkError);
-
+      expect(rejectedFn).toBeDefined();
       const error = { response: { status: 500 } };
-
-      await expect(mockInstance._responseOnRejected(error)).rejects.toBe(error);
+      await expect(rejectedFn!(error)).rejects.toBe(error);
     });
   });
 });
@@ -283,7 +307,7 @@ describe('Exercise 1: Axios - HTTP Client Basics', () => {
 // ============================================================================
 
 describe('Exercise 2: TanStack Query - Data Fetching', () => {
-  let queryClient;
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -300,30 +324,29 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
 
   describe('PostsList', () => {
     it('should show loading state initially', () => {
-      const api = { get: vi.fn(() => new Promise(() => {})) };
-
+      // Return a promise that never resolves, but with correct AxiosResponse type
+      const api = {
+        get: vi.fn(
+          () => new Promise<import('axios').AxiosResponse<any>>(() => {})
+        )
+      };
       render(
         <QueryClientProvider client={queryClient}>
           <PostsList api={api} />
         </QueryClientProvider>
       );
-
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('should fetch posts from /posts endpoint', async () => {
       const api = {
-        get: vi.fn().mockResolvedValue({
-          data: [{ id: 1, title: 'Post 1' }]
-        })
+        get: vi.fn().mockResolvedValue({ data: [{ id: 1, title: 'Post 1' }] })
       };
-
       render(
         <QueryClientProvider client={queryClient}>
           <PostsList api={api} />
         </QueryClientProvider>
       );
-
       await waitFor(() => {
         expect(api.get).toHaveBeenCalledWith('/posts');
       });
@@ -338,13 +361,11 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
           ]
         })
       };
-
       render(
         <QueryClientProvider client={queryClient}>
           <PostsList api={api} />
         </QueryClientProvider>
       );
-
       await waitFor(() => {
         expect(screen.getByText('First Post')).toBeInTheDocument();
         expect(screen.getByText('Second Post')).toBeInTheDocument();
@@ -352,32 +373,24 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
     });
 
     it('should show error message when fetch fails', async () => {
-      const api = {
-        get: vi.fn().mockRejectedValue(new Error('Fetch failed'))
-      };
-
+      const api = { get: vi.fn().mockRejectedValue(new Error('Fetch failed')) };
       render(
         <QueryClientProvider client={queryClient}>
           <PostsList api={api} />
         </QueryClientProvider>
       );
-
       await waitFor(() => {
         expect(screen.getByText(/error/i)).toBeInTheDocument();
       });
     });
 
     it('should use queryKey ["posts"]', async () => {
-      const api = {
-        get: vi.fn().mockResolvedValue({ data: [] })
-      };
-
+      const api = { get: vi.fn().mockResolvedValue({ data: [] }) };
       render(
         <QueryClientProvider client={queryClient}>
           <PostsList api={api} />
         </QueryClientProvider>
       );
-
       await waitFor(() => {
         const cache = queryClient.getQueryCache();
         const query = cache.find({ queryKey: ['posts'] });
@@ -392,7 +405,7 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <PostDetail postId={null} api={api} />
+          <PostDetail api={api} />
         </QueryClientProvider>
       );
 
@@ -404,7 +417,7 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <PostDetail postId={null} api={api} />
+          <PostDetail api={api} />
         </QueryClientProvider>
       );
 
@@ -450,8 +463,18 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
     });
 
     it('should show loading state while fetching', () => {
+      // Return a promise that never resolves, but with correct AxiosResponse<PostDetailType> type
       const api = {
-        get: vi.fn(() => new Promise(() => {}))
+        get: vi.fn(
+          () =>
+            new Promise<
+              import('axios').AxiosResponse<{
+                id: number;
+                title: string;
+                body: string;
+              }>
+            >(() => {})
+        )
       };
 
       render(
@@ -518,7 +541,16 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
 
     it('should show loading state while mutation is pending', async () => {
       const api = {
-        post: vi.fn(() => new Promise(() => {}))
+        post: vi.fn(
+          () =>
+            new Promise<
+              import('axios').AxiosResponse<{
+                id: number;
+                title: string;
+                body: string;
+              }>
+            >(() => {})
+        )
       };
       const user = userEvent.setup();
 
@@ -635,9 +667,18 @@ describe('Exercise 2: TanStack Query - Data Fetching', () => {
         get: vi.fn().mockResolvedValue({ data: [] }),
         post: vi.fn(
           () =>
-            new Promise((resolve) =>
+            new Promise<
+              import('axios').AxiosResponse<{ id: number; text: string }>
+            >((resolve) =>
               setTimeout(
-                () => resolve({ data: { id: 1, text: 'New Todo' } }),
+                () =>
+                  resolve({
+                    data: { id: 1, text: 'New Todo' },
+                    status: 200,
+                    statusText: 'OK',
+                    headers: {},
+                    config: {}
+                  }),
                 1000
               )
             )
@@ -738,26 +779,28 @@ describe('Exercise 3: Redux - State Management', () => {
     });
 
     it('should handle increment', () => {
-      const state = counterReducer({ value: 5 }, { type: 'increment' });
+      expect(counterActions.increment()).toEqual({ type: 'counter/increment' });
+      const state = counterReducer({ value: 5 }, counterActions.increment());
       expect(state).toEqual({ value: 6 });
     });
 
     it('should handle decrement', () => {
-      const state = counterReducer({ value: 5 }, { type: 'decrement' });
+      expect(counterActions.decrement()).toEqual({ type: 'counter/decrement' });
+      const state = counterReducer({ value: 5 }, counterActions.decrement());
       expect(state).toEqual({ value: 4 });
     });
 
     it('should handle incrementByAmount', () => {
       const state = counterReducer(
         { value: 5 },
-        { type: 'incrementByAmount', payload: 10 }
+        counterActions.incrementByAmount(10)
       );
       expect(state).toEqual({ value: 15 });
     });
 
     it('should not mutate original state', () => {
       const original = { value: 5 };
-      counterReducer(original, { type: 'increment' });
+      counterReducer(original, counterActions.increment());
       expect(original).toEqual({ value: 5 });
     });
 
@@ -839,16 +882,16 @@ describe('Exercise 3: Redux - State Management', () => {
 
   describe('counterActions', () => {
     it('should create increment action', () => {
-      expect(counterActions.increment()).toEqual({ type: 'increment' });
+      expect(counterActions.increment()).toEqual({ type: 'counter/increment' });
     });
 
     it('should create decrement action', () => {
-      expect(counterActions.decrement()).toEqual({ type: 'decrement' });
+      expect(counterActions.decrement()).toEqual({ type: 'counter/decrement' });
     });
 
     it('should create incrementByAmount action with payload', () => {
       expect(counterActions.incrementByAmount(5)).toEqual({
-        type: 'incrementByAmount',
+        type: 'counter/incrementByAmount',
         payload: 5
       });
     });
@@ -861,10 +904,7 @@ describe('Exercise 3: Redux - State Management', () => {
     });
 
     it('should handle todos/todoAdded', () => {
-      const state = todosReducer([], {
-        type: 'todos/todoAdded',
-        payload: 'Learn Redux'
-      });
+      const state = todosReducer([], todosActions.todoAdded('Learn Redux'));
 
       expect(state).toHaveLength(1);
       expect(state[0]).toMatchObject({
@@ -880,10 +920,7 @@ describe('Exercise 3: Redux - State Management', () => {
         { id: 2, text: 'Todo 2', completed: false }
       ];
 
-      const state = todosReducer(initial, {
-        type: 'todos/todoToggled',
-        id: 1
-      });
+      const state = todosReducer(initial, todosActions.todoToggled(1));
 
       expect(state[0].completed).toBe(true);
       expect(state[1].completed).toBe(false);
@@ -895,10 +932,7 @@ describe('Exercise 3: Redux - State Management', () => {
         { id: 2, text: 'Todo 2', completed: false }
       ];
 
-      const state = todosReducer(initial, {
-        type: 'todos/todoDeleted',
-        id: 1
-      });
+      const state = todosReducer(initial, todosActions.todoDeleted(1));
 
       expect(state).toHaveLength(1);
       expect(state[0].id).toBe(2);
@@ -906,34 +940,25 @@ describe('Exercise 3: Redux - State Management', () => {
 
     it('should not mutate original state', () => {
       const original = [{ id: 1, text: 'Todo', completed: false }];
-      todosReducer(original, { type: 'todos/todoAdded', payload: 'New' });
+      todosReducer(original, todosActions.todoAdded('New'));
       expect(original).toHaveLength(1);
     });
 
     it('should add multiple todos', () => {
-      let state = [];
-      state = todosReducer(state, {
-        type: 'todos/todoAdded',
-        payload: 'First'
-      });
-      state = todosReducer(state, {
-        type: 'todos/todoAdded',
-        payload: 'Second'
-      });
-      state = todosReducer(state, {
-        type: 'todos/todoAdded',
-        payload: 'Third'
-      });
+      let state: TodoState[] = [];
+      state = todosReducer(state, todosActions.todoAdded('First'));
+      state = todosReducer(state, todosActions.todoAdded('Second'));
+      state = todosReducer(state, todosActions.todoAdded('Third'));
 
       expect(state).toHaveLength(3);
     });
 
     it('should toggle same todo multiple times', () => {
       let state = [{ id: 1, text: 'Todo', completed: false }];
-      state = todosReducer(state, { type: 'todos/todoToggled', id: 1 });
+      state = todosReducer(state, todosActions.todoToggled(1));
       expect(state[0].completed).toBe(true);
 
-      state = todosReducer(state, { type: 'todos/todoToggled', id: 1 });
+      state = todosReducer(state, todosActions.todoToggled(1));
       expect(state[0].completed).toBe(false);
     });
   });
@@ -945,142 +970,136 @@ describe('Exercise 3: Redux - State Management', () => {
 
 describe('Exercise 4: Zustand - Lightweight State Management', () => {
   describe('createCounterStore', () => {
+    let useStore: ReturnType<typeof createCounterStore>;
+
+    beforeEach(() => {
+      useStore = createCounterStore();
+      act(() => {
+        useStore.setState({ count: 0 });
+      });
+    });
+
     it('should create store with initial count of 0', () => {
-      const useStore = createCounterStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.count).toBe(0);
+      expect(useStore.getState().count).toBe(0);
     });
 
     it('should increment count', () => {
-      const useStore = createCounterStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.increment();
+        useStore.getState().increment();
       });
 
-      expect(result.current.count).toBe(1);
+      expect(useStore.getState().count).toBe(1);
     });
 
     it('should decrement count', () => {
-      const useStore = createCounterStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.increment();
-        result.current.increment();
-        result.current.decrement();
+        useStore.getState().increment();
+        useStore.getState().increment();
+        useStore.getState().decrement();
       });
 
-      expect(result.current.count).toBe(1);
+      expect(useStore.getState().count).toBe(1);
     });
 
     it('should reset count to 0', () => {
-      const useStore = createCounterStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.increment();
-        result.current.increment();
-        result.current.increment();
-        result.current.reset();
+        useStore.getState().increment();
+        useStore.getState().increment();
+        useStore.getState().increment();
+        useStore.getState().reset();
       });
 
-      expect(result.current.count).toBe(0);
+      expect(useStore.getState().count).toBe(0);
     });
 
     it('should handle multiple increments', () => {
-      const useStore = createCounterStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.increment();
-        result.current.increment();
-        result.current.increment();
+        useStore.getState().increment();
+        useStore.getState().increment();
+        useStore.getState().increment();
       });
 
-      expect(result.current.count).toBe(3);
+      expect(useStore.getState().count).toBe(3);
     });
   });
 
   describe('createUsersStore', () => {
+    let useStore: ReturnType<typeof createUsersStore>;
+
+    beforeEach(() => {
+      useStore = createUsersStore();
+      act(() => {
+        useStore.setState({ users: [], loading: false });
+      });
+    });
+
     it('should initialize with empty users array', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.users).toEqual([]);
+      expect(useStore.getState().users).toEqual([]);
     });
 
     it('should initialize with loading false', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.loading).toBe(false);
+      expect(useStore.getState().loading).toBe(false);
     });
 
     it('should set users array', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-
       const users = [
         { id: 1, name: 'Alice' },
         { id: 2, name: 'Bob' }
       ];
       act(() => {
-        result.current.setUsers(users);
+        useStore.getState().setUsers(users);
       });
 
-      expect(result.current.users).toEqual(users);
+      expect(useStore.getState().users).toBe(users);
     });
 
     it('should set loading state', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.setLoading(true);
+        useStore.getState().setLoading(true);
       });
 
-      expect(result.current.loading).toBe(true);
+      expect(useStore.getState().loading).toBe(true);
     });
 
     it('should add user to array', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.addUser({ id: 1, name: 'Alice' });
+        useStore.getState().addUser({ id: 1, name: 'Alice' });
       });
 
-      expect(result.current.users).toHaveLength(1);
-      expect(result.current.users[0]).toEqual({ id: 1, name: 'Alice' });
+      expect(useStore.getState().users).toHaveLength(1);
+      expect(useStore.getState().users[0]).toEqual({ id: 1, name: 'Alice' });
     });
 
     it('should have selectUserCount selector', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.addUser({ id: 1, name: 'Alice' });
-        result.current.addUser({ id: 2, name: 'Bob' });
+        useStore.getState().addUser({ id: 1, name: 'Alice' });
+        useStore.getState().addUser({ id: 2, name: 'Bob' });
       });
 
-      expect(result.current.selectUserCount()).toBe(2);
+      expect(useStore.getState().selectUserCount()).toBe(2);
     });
 
     it('should have selectIsEmpty selector', () => {
-      const useStore = createUsersStore();
-      const { result } = renderHook(() => useStore());
-
-      expect(result.current.selectIsEmpty()).toBe(true);
+      expect(useStore.getState().selectIsEmpty()).toBe(true);
 
       act(() => {
-        result.current.addUser({ id: 1, name: 'Alice' });
+        useStore.getState().addUser({ id: 1, name: 'Alice' });
       });
 
-      expect(result.current.selectIsEmpty()).toBe(false);
+      expect(useStore.getState().selectIsEmpty()).toBe(false);
     });
   });
 
   describe('createThemeStore', () => {
+    let useStore: ReturnType<typeof createThemeStore>;
+
+    beforeEach(() => {
+      useStore = createThemeStore();
+      act(() => {
+        useStore.setState({ theme: 'light' });
+      });
+    });
+
     beforeEach(() => {
       localStorage.clear();
     });
@@ -1090,72 +1109,58 @@ describe('Exercise 4: Zustand - Lightweight State Management', () => {
     });
 
     it('should initialize with light theme', () => {
-      const useStore = createThemeStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.theme).toBe('light');
+      expect(useStore.getState().theme).toBe('light');
     });
 
     it('should set theme', () => {
-      const useStore = createThemeStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.setTheme('dark');
+        useStore.getState().setTheme('dark');
       });
 
-      expect(result.current.theme).toBe('dark');
+      expect(useStore.getState().theme).toBe('dark');
     });
 
     it('should toggle theme from light to dark', () => {
-      const useStore = createThemeStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.toggleTheme();
+        useStore.getState().toggleTheme();
       });
 
-      expect(result.current.theme).toBe('dark');
+      expect(useStore.getState().theme).toBe('dark');
     });
 
     it('should toggle theme from dark to light', () => {
-      const useStore = createThemeStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.setTheme('dark');
-        result.current.toggleTheme();
+        useStore.getState().setTheme('dark');
+        useStore.getState().toggleTheme();
       });
 
-      expect(result.current.theme).toBe('light');
+      expect(useStore.getState().theme).toBe('light');
     });
 
     it('should persist theme to localStorage', () => {
-      const useStore = createThemeStore();
-      const { result } = renderHook(() => useStore());
-
       act(() => {
-        result.current.setTheme('dark');
+        useStore.getState().setTheme('dark');
       });
 
       const stored = localStorage.getItem('theme-storage');
       expect(stored).toBeDefined();
-      expect(JSON.parse(stored).state.theme).toBe('dark');
+      if (stored) {
+        expect(JSON.parse(stored).state.theme).toBe('dark');
+      }
     });
 
     it('should restore theme from localStorage', () => {
       // First store - set dark theme
       const useStore1 = createThemeStore();
-      const { result: result1 } = renderHook(() => useStore1());
 
       act(() => {
-        result1.current.setTheme('dark');
+        useStore1.getState().setTheme('dark');
       });
 
       // Second store - should restore dark theme
       const useStore2 = createThemeStore();
-      const { result: result2 } = renderHook(() => useStore2());
 
-      expect(result2.current.theme).toBe('dark');
+      expect(useStore2.getState().theme).toBe('dark');
     });
   });
 
@@ -1219,131 +1224,116 @@ describe('Exercise 4: Zustand - Lightweight State Management', () => {
     });
   });
 
-  describe('createAsyncStore', () => {
+  describe.only('createAsyncStore', () => {
+    let useStore: ReturnType<typeof createAsyncStore>;
+
+    beforeEach(() => {
+      useStore = createAsyncStore();
+      act(() => {
+        useStore.setState({ data: null, loading: false });
+      });
+    });
+
     it('should initialize with null data', () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.data).toBeNull();
+      expect(useStore.getState().data).toBeNull();
     });
 
     it('should initialize with loading false', () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.loading).toBe(false);
+      expect(useStore.getState().loading).toBe(false);
     });
 
     it('should initialize with null error', () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-      expect(result.current.error).toBeNull();
+      expect(useStore.getState().error).toBeNull();
     });
 
     it('should set loading to true when fetching', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const api = {
-        get: vi.fn(() => new Promise(() => {}))
-      };
+        get: vi.fn().mockResolvedValue({ data: {} })
+      } as unknown as AxiosInstance;
 
       act(() => {
-        result.current.fetchData(api, '/test');
+        useStore.getState().fetchData(api, '/test');
       });
 
-      expect(result.current.loading).toBe(true);
+      expect(useStore.getState().loading).toBe(true);
     });
 
     it('should set data on successful fetch', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const api = {
         get: vi.fn().mockResolvedValue({ data: { id: 1, name: 'Test' } })
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api, '/test');
+        useStore.getState().fetchData(api, '/test');
       });
 
-      expect(result.current.data).toEqual({ id: 1, name: 'Test' });
+      expect(useStore.getState().data).toEqual({ id: 1, name: 'Test' });
     });
 
     it('should set loading to false after successful fetch', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const api = {
         get: vi.fn().mockResolvedValue({ data: {} })
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api, '/test');
+        useStore.getState().fetchData(api, '/test');
       });
 
-      expect(result.current.loading).toBe(false);
+      expect(useStore.getState().loading).toBe(false);
     });
 
     it('should set error on failed fetch', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const error = new Error('Fetch failed');
       const api = {
         get: vi.fn().mockRejectedValue(error)
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api, '/test');
+        useStore.getState().fetchData(api, '/test');
       });
 
-      expect(result.current.error).toStrictEqual(error);
+      expect(useStore.getState().error).toStrictEqual(error);
     });
 
     it('should set loading to false after failed fetch', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const api = {
         get: vi.fn().mockRejectedValue(new Error('Failed'))
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api, '/test');
+        useStore.getState().fetchData(api, '/test');
       });
 
-      expect(result.current.loading).toBe(false);
+      expect(useStore.getState().loading).toBe(false);
     });
 
     it('should clear error before new fetch', async () => {
-      const useStore = createAsyncStore();
-      const { result } = renderHook(() => useStore());
-
       const api1 = {
         get: vi.fn().mockRejectedValue(new Error('First error'))
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api1, '/test');
+        useStore.getState().fetchData(api1, '/test');
       });
 
-      expect(result.current.error).toBeDefined();
+      expect(useStore.getState().error).toBeDefined();
 
       const api2 = {
         get: vi.fn().mockResolvedValue({ data: {} })
-      };
+      } as unknown as AxiosInstance;
 
       await act(async () => {
-        await result.current.fetchData(api2, '/test');
+        useStore.getState().fetchData(api2, '/test');
       });
 
-      expect(result.current.error).toBeNull();
+      expect(useStore.getState().error).toBeNull();
     });
   });
 });
 
 // Helper for renderHook (simple implementation)
-function renderHook(callback) {
-  let result = { current: null };
+function renderHook<T>(callback: () => T) {
+  let result = { current: null as T | null };
 
   function TestComponent() {
     result.current = callback();

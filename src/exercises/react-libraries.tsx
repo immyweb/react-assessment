@@ -6,15 +6,14 @@
  * 2. TanStack Query (React Query) - Server state management and data fetching
  * 3. Redux - Predictable state container
  * 4. Zustand - Lightweight state management
- *
- * Each exercise includes TODO comments where you need to implement functionality.
- * Run the test suite to validate your implementations.
  */
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import type { AxiosInstance, AxiosResponse } from 'axios';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 import { useSelector, useDispatch } from 'react-redux';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -348,10 +347,11 @@ export const createAsyncStore = () => {
  * Simple mock API for testing
  */
 export const createMockApi = () => {
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   return {
-    get: async (url) => {
+    get: async (url: string) => {
       await delay(100);
       if (url.includes('/users/')) {
         const id = url.split('/').pop();
@@ -375,9 +375,12 @@ export const createMockApi = () => {
       }
       throw new Error('Not found');
     },
-    post: async (url, data) => {
+    post: async (
+      url: string,
+      data: { id: number; title: string; body: string }
+    ) => {
       await delay(100);
-      return { data: { id: Date.now(), ...data } };
+      return { data: { ...data, id: Date.now() } };
     }
   };
 };

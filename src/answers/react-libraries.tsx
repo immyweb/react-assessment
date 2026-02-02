@@ -6,15 +6,14 @@
  * 2. TanStack Query (React Query) - Server state management and data fetching
  * 3. Redux - Predictable state container
  * 4. Zustand - Lightweight state management
- *
- * Each exercise includes TODO comments where you need to implement functionality.
- * Run the test suite to validate your implementations.
  */
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import type { AxiosInstance, AxiosResponse } from 'axios';
+import { useQuery, useMutation, QueryClient } from '@tanstack/react-query';
 import { useSelector, useDispatch } from 'react-redux';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -47,20 +46,36 @@ export const createAxiosInstance = () => {
  * - Display error message if request fails
  * - Display user data when loaded (name, email)
  */
-export const UserProfile = ({ userId, axiosInstance }) => {
-  const [user, setUser] = useState(null);
+export const UserProfile = ({
+  userId,
+  axiosInstance
+}: {
+  userId: string;
+  axiosInstance: AxiosInstance;
+}) => {
+  const [user, setUser] = useState<{
+    id: string;
+    name: string;
+    email: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function getUser() {
       try {
         setLoading(true);
-        setError(false);
+        setError(null);
         const response = await axiosInstance.get(`/users/${userId}`);
         setUser(response.data);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+          console.error(err.message);
+        } else {
+          setError('An unexpected error occurred');
+          console.error('An unexpected error occurred:', err);
+        }
       } finally {
         setLoading(false);
       }
@@ -96,7 +111,7 @@ export const UserProfile = ({ userId, axiosInstance }) => {
  * - Only add header if token exists
  * - Return modified config
  */
-export const addAuthInterceptor = (axiosInstance) => {
+export const addAuthInterceptor = (axiosInstance: AxiosInstance) => {
   const token = localStorage.getItem('authToken');
 
   return axiosInstance.interceptors.request.use((config) => {
@@ -116,9 +131,9 @@ export const addAuthInterceptor = (axiosInstance) => {
  * - Return modified error
  */
 export const addErrorInterceptor = (
-  axiosInstance,
-  onUnauthorized,
-  onNetworkError
+  axiosInstance: AxiosInstance,
+  onUnauthorized: () => void,
+  onNetworkError: () => void
 ) => {
   return axiosInstance.interceptors.response.use(
     (response) => {
@@ -159,9 +174,19 @@ export const addErrorInterceptor = (
  * - Show error message if fetch fails
  * - Display list of posts with title
  */
+type PostsListType = {
+  id: number;
+  title: string;
+};
 
-export const PostsList = ({ api }) => {
-  const { isFetching, isError, data, error } = useQuery({
+export const PostsList = ({
+  api
+}: {
+  api: { get: (url: string) => Promise<AxiosResponse<PostsListType[]>> };
+}) => {
+  const { isFetching, isError, data, error } = useQuery<
+    AxiosResponse<PostsListType[]>
+  >({
     queryKey: ['posts'],
     queryFn: () => api.get('/posts'),
     staleTime: 30000
@@ -177,7 +202,7 @@ export const PostsList = ({ api }) => {
 
   return (
     <ul>
-      {data.data.map((post) => (
+      {data?.data?.map((post) => (
         <li key={post.id}>{post.title}</li>
       ))}
     </ul>
@@ -195,8 +220,22 @@ export const PostsList = ({ api }) => {
  * - Show loading state while fetching
  * - Display post title and body
  */
-export const PostDetail = ({ postId, api }) => {
-  const { isFetching, isError, data, error } = useQuery({
+type PostDetailType = {
+  id: number;
+  title: string;
+  body: string;
+};
+
+export const PostDetail = ({
+  postId,
+  api
+}: {
+  postId?: number;
+  api: { get: (url: string) => Promise<AxiosResponse<PostDetailType>> };
+}) => {
+  const { isFetching, isError, data, error } = useQuery<
+    AxiosResponse<PostDetailType>
+  >({
     queryKey: ['posts', postId],
     queryFn: () => api.get(`/posts/${postId}`),
     enabled: !!postId
@@ -214,9 +253,11 @@ export const PostDetail = ({ postId, api }) => {
     return <div>Error: {error.message}</div>;
   }
 
-  const {
-    data: { title, body }
-  } = data;
+  if (!data) {
+    return <div>No data found</div>;
+  }
+
+  const { title, body } = data?.data;
 
   return (
     <div>
@@ -236,9 +277,22 @@ export const PostDetail = ({ postId, api }) => {
  * - Show error message if mutation fails
  * - Clear form after successful submission
  */
-export const CreatePost = ({ api, queryClient }) => {
+type NewPost = {
+  title: string;
+  body: string;
+};
+
+export const CreatePost = ({
+  api,
+  queryClient
+}: {
+  api: {
+    post: (url: string, newPost: NewPost) => Promise<AxiosResponse<NewPost>>;
+  };
+  queryClient: QueryClient;
+}) => {
   const mutation = useMutation({
-    mutationFn: (newPost) => {
+    mutationFn: (newPost: NewPost) => {
       return api.post('/posts', newPost);
     },
     onSuccess: async () => {
@@ -251,7 +305,7 @@ export const CreatePost = ({ api, queryClient }) => {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: React.FormEvent) {
     evt.preventDefault();
     mutation.mutate({ title, body });
   }
@@ -297,21 +351,40 @@ export const CreatePost = ({ api, queryClient }) => {
  * - Rollback on error using previous snapshot
  * - Refetch on settled to sync with server
  */
+type OptimisticTodoListType = {
+  id: number;
+  text: string;
+  completed: boolean;
+};
+
 let nextId = 2;
-export const OptimisticTodoList = ({ api, queryClient }) => {
+export const OptimisticTodoList = ({
+  api,
+  queryClient
+}: {
+  api: {
+    post: (
+      url: string,
+      newTodo: OptimisticTodoListType
+    ) => Promise<AxiosResponse<OptimisticTodoListType>>;
+    get: (url: string) => Promise<AxiosResponse<OptimisticTodoListType[]>>;
+  };
+  queryClient: QueryClient;
+}) => {
   const { isFetching, isError, data, error } = useQuery({
     queryKey: ['todos'],
     queryFn: () => api.get('/todos')
   });
 
   const { mutate, isPending, variables } = useMutation({
-    mutationFn: (newTodo) => api.post('/todos', newTodo),
+    mutationFn: (newTodo: OptimisticTodoListType) =>
+      api.post('/todos', newTodo),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['todos'] })
   });
 
   const [todoItem, setTodoItem] = useState('');
 
-  function handleSubmit(evt) {
+  function handleSubmit(evt: React.FormEvent) {
     evt.preventDefault();
     mutate({ id: ++nextId, text: todoItem, completed: false });
   }
@@ -333,7 +406,7 @@ export const OptimisticTodoList = ({ api, queryClient }) => {
       {isError && <div>An error occurred: {error.message}</div>}
       {data && (
         <ul>
-          {data.data.map((todo) => {
+          {data.data.map((todo: OptimisticTodoListType) => {
             return (
               <li key={todo.id}>
                 {todo.text} <span>{todo.completed}</span>
@@ -365,18 +438,30 @@ export const OptimisticTodoList = ({ api, queryClient }) => {
  * - Handle 'counter/incrementByAmount' action: value + action.payload
  * - Return current state for unknown actions
  */
-export const counterReducer = (state = { value: 0 }, action) => {
-  switch (action.type) {
-    case 'increment':
-      return { ...state, value: state.value + 1 };
-    case 'decrement':
-      return { ...state, value: state.value - 1 };
-    case 'incrementByAmount':
-      return { ...state, value: state.value + action.payload };
-    default:
-      return state;
-  }
-};
+interface CounterState {
+  value: number;
+}
+
+// const initialState: CounterState = { value: 0 };
+
+// const counterSlice = createSlice({
+//   name: 'counter',
+//   initialState,
+//   reducers: {
+//     increment: (state) => {
+//       state.value += 1;
+//     },
+//     decrement: (state) => {
+//       state.value -= 1;
+//     },
+//     incrementByAmount: (state, action: PayloadAction<number>) => {
+//       state.value += action.payload;
+//     }
+//   }
+// });
+
+// export const { increment, decrement, incrementByAmount } = counterSlice.actions;
+// export default counterSlice.reducer;
 
 /**
  * Counter component using Redux hooks
@@ -389,7 +474,7 @@ export const counterReducer = (state = { value: 0 }, action) => {
  * - Display current count
  */
 export const ReduxCounter = () => {
-  const count = useSelector((state) => state.value);
+  const count = useSelector((state: { value: number }) => state.value);
   const dispatch = useDispatch();
 
   return (
@@ -397,38 +482,18 @@ export const ReduxCounter = () => {
       <div>
         <button
           aria-label="Increment value"
-          onClick={() => dispatch({ type: 'increment' })}>
+          onClick={() => dispatch({ type: 'counter/increment' })}>
           Increment
         </button>
         <span>{count}</span>
         <button
           aria-label="Decrement value"
-          onClick={() => dispatch({ type: 'decrement' })}>
+          onClick={() => dispatch({ type: 'counter/decrement' })}>
           Decrement
         </button>
       </div>
     </div>
   );
-};
-
-/**
- * Create action creators for counter
- *
- * Requirements:
- * - increment() returns { type: 'increment' }
- * - decrement() returns { type: 'decrement' }
- * - incrementByAmount(amount) returns { type: 'incrementByAmount', payload: amount }
- */
-export const counterActions = {
-  increment: () => {
-    return { type: 'increment' };
-  },
-  decrement: () => {
-    return { type: 'decrement' };
-  },
-  incrementByAmount: (amount) => {
-    return { type: 'incrementByAmount', payload: amount };
-  }
 };
 
 /**
@@ -441,23 +506,39 @@ export const counterActions = {
  * - 'todos/todoDeleted': Remove todo with matching id
  */
 
-export const todosReducer = (state = [], action) => {
-  switch (action.type) {
-    case 'todos/todoAdded':
-      return [
-        ...state,
-        { id: ++nextId, text: action.payload, completed: false }
-      ];
-    case 'todos/todoToggled':
-      return state.map((t) => {
-        return t.id === action.id ? { ...t, completed: !t.completed } : t;
+export interface TodoState {
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
+const initialState: TodoState[] = [];
+
+const todoSlice = createSlice({
+  name: 'todos',
+  initialState,
+  reducers: {
+    todoAdded: (state, action: PayloadAction<string>) => {
+      state.push({
+        id: Date.now(),
+        text: action.payload,
+        completed: false
       });
-    case 'todos/todoDeleted':
-      return state.filter((t) => t.id !== action.id);
-    default:
-      return state;
+    },
+    todoToggled: (state, action: PayloadAction<number>) => {
+      const todo = state.find((t) => t.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    },
+    todoDeleted: (state, action: PayloadAction<number>) => {
+      return state.filter((t) => t.id !== action.payload);
+    }
   }
-};
+});
+
+export const { todoAdded, todoToggled, todoDeleted } = todoSlice.actions;
+export default todoSlice.reducer;
 
 // ============================================================================
 // Exercise 4: Zustand - Lightweight State Management
@@ -472,15 +553,20 @@ export const todosReducer = (state = [], action) => {
  * - Action: decrement() - decreases count by 1
  * - Action: reset() - sets count to 0
  */
+type createCounterStoreState = {
+  count: number;
+  increment: () => void;
+  decrement: () => void;
+  reset: () => void;
+};
+
 export const createCounterStore = () => {
-  const useCounter = create((set) => ({
+  return create<createCounterStoreState>()((set) => ({
     count: 0,
     increment: () => set((state) => ({ count: state.count + 1 })),
     decrement: () => set((state) => ({ count: state.count - 1 })),
     reset: () => set({ count: 0 })
   }));
-
-  return useCounter;
 };
 
 /**
@@ -494,13 +580,28 @@ export const createCounterStore = () => {
  * - Selector: selectUserCount - returns users.length
  * - Selector: selectIsEmpty - returns users.length === 0
  */
+type createUsersStoreUser = {
+  id: number;
+  name: string;
+};
+
+type createUsersStoreState = {
+  users: createUsersStoreUser[];
+  loading: boolean;
+  setUsers: (users: createUsersStoreUser[]) => void;
+  setLoading: (bool: boolean) => void;
+  addUser: (user: createUsersStoreUser) => void;
+  selectUserCount: () => void;
+  selectIsEmpty: () => void;
+};
+
 export const createUsersStore = () => {
-  const useUsers = create((set, get) => ({
+  return create<createUsersStoreState>((set, get) => ({
     users: [],
     loading: false,
     setUsers: (newUsers) =>
       set((state) => ({
-        users: [...state.users, ...newUsers]
+        users: newUsers
       })),
     setLoading: (bool) =>
       set(() => ({
@@ -513,8 +614,6 @@ export const createUsersStore = () => {
     selectUserCount: () => get().users.length,
     selectIsEmpty: () => get().users.length === 0
   }));
-
-  return useUsers;
 };
 
 /**
@@ -526,8 +625,16 @@ export const createUsersStore = () => {
  * - Action: toggleTheme() - toggles between 'light' and 'dark'
  * - Persist to localStorage with name 'theme-storage'
  */
+type ThemeStoreType = 'light' | 'dark';
+
+type createThemeStoreState = {
+  theme: ThemeStoreType;
+  setTheme: (newTheme: ThemeStoreType) => void;
+  toggleTheme: () => void;
+};
+
 export const createThemeStore = () => {
-  const useTheme = create(
+  return create<createThemeStoreState>()(
     persist(
       (set) => ({
         theme: 'light',
@@ -545,8 +652,6 @@ export const createThemeStore = () => {
       }
     )
   );
-
-  return useTheme;
 };
 
 /**
@@ -559,7 +664,13 @@ export const createThemeStore = () => {
  * - Render decrement button
  * - Render reset button
  */
-export const ZustandCounter = ({ useCounterStore }) => {
+type ZustandCounterProps = {
+  useCounterStore: <T>(selector: (state: createCounterStoreState) => T) => T;
+};
+
+export const ZustandCounter: React.FC<ZustandCounterProps> = ({
+  useCounterStore
+}) => {
   const count = useCounterStore((state) => state.count);
   const increment = useCounterStore((state) => state.increment);
   const decrement = useCounterStore((state) => state.decrement);
@@ -588,8 +699,15 @@ export const ZustandCounter = ({ useCounterStore }) => {
  *   - Sets error on failure
  *   - Sets loading to false when done
  */
+type createAsyncStoreState = {
+  data: { id: number; name: string } | null;
+  loading: boolean;
+  error: Error | null;
+  fetchData: (api: AxiosInstance, endpoint: string) => void;
+};
+
 export const createAsyncStore = () => {
-  const useData = create((set) => ({
+  return create<createAsyncStoreState>((set) => ({
     data: null,
     loading: false,
     error: null,
@@ -599,12 +717,14 @@ export const createAsyncStore = () => {
         const response = await api.get(endpoint);
         set({ loading: false, data: response.data });
       } catch (err) {
-        set({ loading: false, error: new Error(err.message) });
+        let errorMessage = 'Unknown error';
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        set({ loading: false, error: new Error(errorMessage) });
       }
     }
   }));
-
-  return useData;
 };
 
 // ============================================================================
@@ -615,10 +735,11 @@ export const createAsyncStore = () => {
  * Simple mock API for testing
  */
 export const createMockApi = () => {
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
   return {
-    get: async (url) => {
+    get: async (url: string) => {
       await delay(100);
       if (url.includes('/users/')) {
         const id = url.split('/').pop();
@@ -642,9 +763,12 @@ export const createMockApi = () => {
       }
       throw new Error('Not found');
     },
-    post: async (url, data) => {
+    post: async (
+      url: string,
+      data: { id: number; title: string; body: string }
+    ) => {
       await delay(100);
-      return { data: { id: Date.now(), ...data } };
+      return { data: { ...data, id: Date.now() } };
     }
   };
 };
