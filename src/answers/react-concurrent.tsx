@@ -7,12 +7,6 @@
  * - useDeferredValue for expensive computations
  * - useOptimistic for optimistic updates
  * - Progressive enhancement patterns
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import {
@@ -37,16 +31,16 @@ import {
  * - Return an object with a read() method
  * - Throw a promise while loading (Suspense requirement)
  * - Return data when complete: { id: userId, name: `User ${userId}` }
- *
- * @param {number} userId - The user ID to fetch
- * @param {number} delay - Delay in milliseconds (default: 1000)
- * @returns {Object} Resource object with read() method
  */
-export function fetchUser(userId, delay = 1000) {
-  let status = 'pending';
-  let result;
+type Resource = {
+  read: () => { id: number; name: string };
+};
 
-  const promise = new Promise((resolve) => {
+export function fetchUser(userId: number, delay = 1000): Resource {
+  let status = 'pending';
+  let result: { id: number; name: string } | Error | null = null;
+
+  const promise = new Promise<{ id: number; name: string }>((resolve) => {
     setTimeout(() => {
       resolve({ id: userId, name: `User ${userId}` });
     }, delay);
@@ -67,9 +61,10 @@ export function fetchUser(userId, delay = 1000) {
         throw promise;
       } else if (status === 'error') {
         throw result;
-      } else if (status === 'success') {
+      } else if (status === 'success' && result && !(result instanceof Error)) {
         return result;
       }
+      throw new Error('Unexpected state');
     }
   };
 }
@@ -84,7 +79,8 @@ export function fetchUser(userId, delay = 1000) {
  * - Display user id and name
  * - Render inside a div with className "user-profile"
  */
-export function UserProfile({ resource }) {
+
+export function UserProfile({ resource }: { resource: Resource }) {
   const { id, name } = resource.read();
 
   return (
@@ -136,15 +132,15 @@ export function SuspenseDemo() {
  * - Show "Searching..." when isPending is true
  * - Display filtered results in a list
  */
-export function SearchList({ items = [] }) {
+export function SearchList({ items = [] }: { items: string[] }) {
   const [isPending, startTransition] = useTransition();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchItems, setSearchItems] = useState(items);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchItems, setSearchItems] = useState<string[]>(items);
 
-  function handleSearch(text) {
+  function handleSearch(text: string) {
     setSearchTerm(text);
     startTransition(() => {
-      const filtered = items.filter((item) =>
+      const filtered = items.filter((item: string) =>
         item.toLowerCase().includes(text.toLowerCase())
       );
       setSearchItems(filtered);
@@ -189,11 +185,13 @@ export function SearchList({ items = [] }) {
  * - Posts: "Posts content" with 5000 items
  * - Contact: "Contact content" with 5000 items
  */
+type Tab = 'about' | 'posts' | 'contact';
+
 export function TabSwitcher() {
   const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState('about');
+  const [activeTab, setActiveTab] = useState<Tab>('about');
 
-  function handleTabChange(tab) {
+  function handleTabChange(tab: Tab) {
     startTransition(() => {
       setActiveTab(tab);
     });
@@ -241,7 +239,13 @@ export function TabSwitcher() {
  * Helper component to simulate slow rendering.
  * DO NOT MODIFY - Used by tests and tab switcher.
  */
-export function SlowContent({ text, count = 100 }) {
+export function SlowContent({
+  text,
+  count = 100
+}: {
+  text: string;
+  count: number;
+}) {
   const items = Array.from({ length: count }, (_, i) => `${text} ${i + 1}`);
   return (
     <ul>
@@ -272,15 +276,15 @@ export function SlowContent({ text, count = 100 }) {
  * - Filtering uses deferred value
  * - Show opacity: 0.5 when deferredQuery !== query
  */
-export function DeferredSearchList({ items = [] }) {
+export function DeferredSearchList({ items = [] }: { items: string[] }) {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
-  const [searchResults, setSearchResults] = useState(items);
+  const [searchResults, setSearchResults] = useState<string[]>(items);
   const isStale = query !== deferredQuery;
 
-  function handleSearch(text) {
+  function handleSearch(text: string) {
     setQuery(text);
-    const filtered = items.filter((item) =>
+    const filtered = items.filter((item: string) =>
       item.toLowerCase().includes(deferredQuery.toLowerCase())
     );
     setSearchResults(filtered);
@@ -323,11 +327,8 @@ export function DeferredSearchList({ items = [] }) {
 /**
  * Simulate an API call that adds a todo item.
  * DO NOT MODIFY - Used by tests.
- *
- * @param {string} text - Todo text
- * @returns {Promise<Object>} Resolves with todo object after delay
  */
-export function addTodoAPI(text) {
+export function addTodoAPI(text: string): Promise<OptimisticTodo> {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -355,24 +356,32 @@ export function addTodoAPI(text) {
  * - Submit button (disabled during submission)
  * - Clear input after submission starts
  */
+type OptimisticTodo = {
+  id: number;
+  text: string;
+  completed: boolean;
+  optimistic?: boolean;
+};
+
 export function OptimisticTodoList() {
-  const [item, setItem] = useState('');
-  const [todos, setTodos] = useState([]);
+  const [item, setItem] = useState<string>('');
+  const [todos, setTodos] = useState<OptimisticTodo[]>([]);
   const [optimisticTodos, addOptimisticTodo] = useOptimistic(
     todos,
-    (currentTodos, newTodo) => [
+    (currentTodos: OptimisticTodo[], newTodo: OptimisticTodo) => [
       { ...newTodo, optimistic: true },
       ...currentTodos
     ]
   );
   const [isPending, startTransition] = useTransition();
 
-  function submitTodo(text) {
+  function submitTodo(text: string) {
     addOptimisticTodo({ id: Date.now(), text, completed: false });
 
     startTransition(async () => {
       try {
         const savedTodo = await addTodoAPI(text);
+
         setTodos((prev) => [{ ...savedTodo }, ...prev]);
         setItem('');
       } catch (err) {
@@ -386,7 +395,10 @@ export function OptimisticTodoList() {
       <form
         role="form"
         action={async (formData) => {
-          submitTodo(formData.get('newTodo'));
+          const value = formData.get('newTodo');
+          if (typeof value === 'string') {
+            submitTodo(value);
+          }
         }}>
         <label htmlFor="newTodo">Add todo</label>
         <input
@@ -433,7 +445,7 @@ export function OptimisticTodoList() {
  * - Button text: "Like ({count})" or "Liking... ({count})"
  * - Button disabled when pending
  */
-function addCountAPI() {
+function addCountAPI(): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve();
@@ -442,7 +454,7 @@ function addCountAPI() {
 }
 
 export function OptimisticLikeButton({ initialLikes = 0 }) {
-  const [count, setCount] = useState(initialLikes);
+  const [count, setCount] = useState<number>(initialLikes);
   const [optimisticCount, addOptimisticCount] = useOptimistic(
     count,
     (currentCount) => currentCount + 1
@@ -451,7 +463,7 @@ export function OptimisticLikeButton({ initialLikes = 0 }) {
 
   function handleAddLike() {
     startTransition(async () => {
-      addOptimisticCount();
+      addOptimisticCount(1);
       try {
         await addCountAPI();
         setCount((prev) => prev + 1);
@@ -490,21 +502,39 @@ export function OptimisticLikeButton({ initialLikes = 0 }) {
  *
  * Each submission should create an object: { id, name, email, pending: boolean }
  */
-export function ProgressiveForm({ onSubmit }) {
-  const [submittedUsers, setSubmittedUser] = useState([]);
+type OptimisticUser = {
+  id: number;
+  name: string;
+  email: string;
+  pending: boolean;
+  optimistic?: boolean;
+};
+
+export function ProgressiveForm({
+  onSubmit
+}: {
+  onSubmit: (data: OptimisticUser) => void;
+}) {
+  const [submittedUsers, setSubmittedUser] = useState<OptimisticUser[]>([]);
   const [optimisticUsers, addOptimisticUser] = useOptimistic(
     submittedUsers,
-    (currentUsers, newUser) => [{ ...newUser }, ...currentUsers]
+    (currentUsers: OptimisticUser[], newUser: OptimisticUser) => [
+      { ...newUser },
+      ...currentUsers
+    ]
   );
   const [isPending, startTransition] = useTransition();
 
-  async function addUser(formData) {
+  async function addUser(formData: FormData) {
     'use server';
+
+    const name = formData.get('nameInput') as string;
+    const email = formData.get('emailInput') as string;
 
     const data = {
       id: Date.now(),
-      name: formData.get('nameInput'),
-      email: formData.get('emailInput'),
+      name,
+      email,
       pending: true
     };
     addOptimisticUser(data);
@@ -564,7 +594,7 @@ export function ProgressiveForm({ onSubmit }) {
  * - Pending comments shown in italics
  * - Updates to real state after server confirms
  */
-function addCommentAPI(comment) {
+function addCommentAPI(comment: OptimisiticComment) {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(comment);
@@ -572,28 +602,40 @@ function addCommentAPI(comment) {
   });
 }
 
-export function OptimisticComments({ initialComments = [] }) {
-  const [comments, setComments] = useState(initialComments);
+type OptimisiticComment = {
+  id: number;
+  text: string;
+  author: string;
+  optimistic?: boolean;
+};
+
+export function OptimisticComments({
+  initialComments = []
+}: {
+  initialComments: OptimisiticComment[];
+}) {
+  const [comments, setComments] =
+    useState<OptimisiticComment[]>(initialComments);
   const [optimisticComments, addOptimisticComment] = useOptimistic(
     comments,
-    (currentComments, newComment) => [
+    (currentComments: OptimisiticComment[], newComment: OptimisiticComment) => [
       { ...newComment, optimistic: true },
       ...currentComments
     ]
   );
   const [isPending, startTransition] = useTransition();
-  const formRef = useRef();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  function addComment(formData) {
+  function addComment(formData: FormData) {
     'use server';
 
     const data = {
       id: Date.now(),
-      author: formData.get('authorInput'),
-      text: formData.get('commentInput')
+      author: formData.get('authorInput') as string,
+      text: formData.get('commentInput') as string
     };
     addOptimisticComment(data);
-    formRef.current.reset();
+    formRef.current?.reset();
 
     startTransition(async () => {
       try {

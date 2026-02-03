@@ -7,12 +7,6 @@
  * - useDeferredValue for expensive computations
  * - useOptimistic for optimistic updates
  * - Progressive enhancement patterns
- *
- * Each exercise includes:
- * - Clear documentation with examples
- * - Expected behavior description
- * - Component requirements
- * - Test cases to validate implementation
  */
 
 import {
@@ -37,10 +31,6 @@ import {
  * - Return an object with a read() method
  * - Throw a promise while loading (Suspense requirement)
  * - Return data when complete: { id: userId, name: `User ${userId}` }
- *
- * @param {number} userId - The user ID to fetch
- * @param {number} delay - Delay in milliseconds (default: 1000)
- * @returns {Object} Resource object with read() method
  */
 export function fetchUser(userId, delay = 1000) {
   // TODO: Implement Suspense-compatible resource
@@ -165,9 +155,6 @@ export function DeferredSearchList({ items = [] }) {
 /**
  * Simulate an API call that adds a todo item.
  * DO NOT MODIFY - Used by tests.
- *
- * @param {string} text - Todo text
- * @returns {Promise<Object>} Resolves with todo object after delay
  */
 export function addTodoAPI(text) {
   return new Promise((resolve) => {

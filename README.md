@@ -107,7 +107,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - API integration patterns ❌
 - Authentication patterns ❌
 
-### 12. Concurrent Features (react-concurrent.jsx)
+### 12. Concurrent Features (react-concurrent.tsx)
 
 - Suspense for data fetching ✅
 - useTransition for non-urgent updates ✅
@@ -115,7 +115,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - useOptimistic for optimistic updates ✅
 - Progressive enhancement ✅
 
-### 13. Libraries (react-libraries.jsx)
+### 13. Libraries (react-libraries.tsx)
 
 - Axios - data fetching ✅
 - React Query - date fetching ✅
