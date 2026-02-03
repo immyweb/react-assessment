@@ -11,8 +11,7 @@
  *
  */
 
-import { useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
+import { FormEvent, ReactElement, useEffect, useState } from 'react';
 import DOMPurify from 'isomorphic-dompurify';
 import { marked } from 'marked';
 
@@ -43,18 +42,9 @@ import { marked } from 'marked';
  * </div>
  */
 export function SafeUserProfile({ username, bio }) {
-  return (
-    <div className="user-profile">
-      <h2>{username}</h2>
-      <p>{bio}</p>
-    </div>
-  );
+  // TODO: Implement safe user profile display
+  // Hint: React automatically escapes content in JSX expressions
 }
-
-SafeUserProfile.propTypes = {
-  username: PropTypes.string.isRequired,
-  bio: PropTypes.string.isRequired
-};
 
 // =============================================================================
 // EXERCISE 2: Safe HTML Rendering with Sanitization
@@ -85,14 +75,11 @@ SafeUserProfile.propTypes = {
  * Should render: <p>Safe content</p> (script removed)
  */
 export function SanitizedHTML({ htmlContent }) {
-  const sanitized = DOMPurify.sanitize(htmlContent);
-
-  return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
+  // TODO: Implement sanitized HTML rendering
+  // 1. Import DOMPurify
+  // 2. Sanitize the htmlContent
+  // 3. Render using dangerouslySetInnerHTML with sanitized content
 }
-
-SanitizedHTML.propTypes = {
-  htmlContent: PropTypes.string.isRequired
-};
 
 // =============================================================================
 // EXERCISE 3: Safe Link Rendering
@@ -118,35 +105,11 @@ SanitizedHTML.propTypes = {
  * - Invalid URL: Render as plain text
  */
 export function SafeLink({ url, text, external = true }) {
-  try {
-    const { protocol } = new URL(url);
-
-    if (
-      protocol !== 'http:' &&
-      protocol !== 'https:' &&
-      protocol !== 'mailto:'
-    ) {
-      return <span>{text}</span>;
-    }
-
-    return (
-      <a
-        href={url}
-        rel="noopener noreferrer"
-        target={protocol !== 'mailto:' && external ? '_blank' : undefined}>
-        {text}
-      </a>
-    );
-  } catch {
-    return <span>{text}</span>;
-  }
+  // TODO: Implement safe link rendering
+  // 1. Validate URL protocol
+  // 2. If safe, render as <a> with appropriate attributes
+  // 3. If unsafe, render as <span> with the text
 }
-
-SafeLink.propTypes = {
-  url: PropTypes.string.isRequired,
-  text: PropTypes.string.isRequired,
-  external: PropTypes.bool
-};
 
 // =============================================================================
 // EXERCISE 4: CSRF-Protected Form
@@ -181,47 +144,11 @@ export function CSRFProtectedForm({ csrfToken, onSubmit }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  function handleSubmit(e) {
-    e.preventDefault();
-
-    if (email && message && csrfToken) {
-      onSubmit({
-        email,
-        message,
-        csrf_token: csrfToken
-      });
-    } else {
-      setError('csrf token is missing');
-    }
-  }
-
-  return (
-    <form method="post" action="/api/submit" onSubmit={handleSubmit}>
-      <input type="hidden" name="csrf_token" value={csrfToken} />
-      <label htmlFor="email">Email</label>
-      <input
-        name="email"
-        id="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <label htmlFor="message">Message</label>
-      <textarea
-        name="message"
-        id="message"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
-      <button type="submit">Submit</button>
-      {error && <span>{error}</span>}
-    </form>
-  );
+  // TODO: Implement CSRF-protected form
+  // 1. Validate csrfToken exists before submission
+  // 2. Include CSRF token as hidden input
+  // 3. Handle form submission with token
 }
-
-CSRFProtectedForm.propTypes = {
-  csrfToken: PropTypes.string.isRequired,
-  onSubmit: PropTypes.func.isRequired
-};
 
 // =============================================================================
 // EXERCISE 5: Safe Markdown Renderer
@@ -251,37 +178,12 @@ CSRFProtectedForm.propTypes = {
  * Output: <h1>Hello</h1><a>Click</a> (href sanitized)
  */
 export function SafeMarkdownRenderer({ markdown }) {
-  // Parse Markdown to HTML
-  const rawHtml = marked.parse(markdown);
-
-  // Sanitize the HTML with allowed tags and attributes
-  const sanitizedHtml = DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
-      'p',
-      'h1',
-      'h2',
-      'h3',
-      'h4',
-      'h5',
-      'h6',
-      'ul',
-      'ol',
-      'li',
-      'em',
-      'strong',
-      'a',
-      'code',
-      'pre'
-    ],
-    ALLOWED_ATTR: ['href', 'title', 'target']
-  });
-
-  return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
+  // TODO: Implement safe markdown rendering
+  // 1. Import marked and DOMPurify
+  // 2. Parse markdown to HTML
+  // 3. Sanitize the HTML
+  // 4. Render using dangerouslySetInnerHTML
 }
-
-SafeMarkdownRenderer.propTypes = {
-  markdown: PropTypes.string.isRequired
-};
 
 // =============================================================================
 // EXERCISE 6: Secure Data Attribute Handler
@@ -304,28 +206,11 @@ SafeMarkdownRenderer.propTypes = {
  * Output: <div data-user-id="123" data-tooltip="[sanitized]" />
  */
 export function SecureDataAttributes({ dataAttributes, children }) {
-  const converted = Object.entries(dataAttributes).map((pair) => {
-    const sanitised = [
-      `data-${pair[0]}`.toLowerCase(),
-      DOMPurify.sanitize(pair[1])
-    ];
-
-    if (sanitised[1] !== pair[1]) {
-      console.warn(`Sanitization applied: "${pair[1]}" -> "${sanitised[1]}"`);
-    }
-
-    return sanitised;
-  });
-
-  const obj = Object.fromEntries(converted);
-
-  return <div {...obj}>{children}</div>;
+  // TODO: Implement secure data attribute handling
+  // 1. Sanitize each attribute value
+  // 2. Apply as data-* attributes
+  // 3. Warn if sanitization was needed
 }
-
-SecureDataAttributes.propTypes = {
-  dataAttributes: PropTypes.object.isRequired,
-  children: PropTypes.node
-};
 
 // =============================================================================
 // EXERCISE 7: Content Security Policy Reporter
@@ -357,42 +242,11 @@ SecureDataAttributes.propTypes = {
 export function CSPViolationReporter() {
   const [violations, setViolations] = useState([]);
 
-  useEffect(() => {
-    window.addEventListener('securitypolicyviolation', onViolation);
-
-    return () => {
-      window.removeEventListener('securitypolicyviolation', onViolation);
-    };
-  }, []);
-
-  function onViolation(event) {
-    const violation = {
-      id: Date.now(),
-      message: 'CSP violation detected',
-      violatedDirective: event.violatedDirective,
-      blockedURI: event.blockedURI || 'N/A',
-      sourceFile: event.sourceFile || 'N/A'
-    };
-    setViolations((prev) => [...prev, violation]);
-  }
-
-  return (
-    <div className="csp-violations">
-      <h3>CSP Violations</h3>
-      <ul>
-        {violations.length > 0
-          ? violations.map((v) => (
-              <li key={v.id}>
-                <p>{v.message}</p>
-                <p>violatedDirective: {v.violatedDirective}</p>
-                <p>blockedURI: {v.blockedURI}</p>
-                <p>sourceFile: {v.sourceFile}</p>
-              </li>
-            ))
-          : 'No CSP violations detected'}
-      </ul>
-    </div>
-  );
+  // TODO: Implement CSP violation reporter
+  // 1. Add event listener for 'securitypolicyviolation'
+  // 2. Store violation details
+  // 3. Display violations
+  // 4. Clean up on unmount
 }
 
 // =============================================================================
@@ -428,78 +282,27 @@ export function SecureFileUpload({ allowedTypes, maxSize, onUpload }) {
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
 
-  function onFileChange(e) {
-    const file = e.target.files[0];
-
-    // Clear error state when a new file is selected
-    setError('');
-
-    if (!file) {
-      setError('No file selected');
-      return;
-    }
-
-    const isTypeCorrect = validateFileType(file, allowedTypes);
-    const isSizeCorrect = file.size <= maxSize;
-
-    if (isTypeCorrect && isSizeCorrect) {
-      if (file.type.startsWith('image/')) {
-        // Revoke previous preview URL to avoid memory leaks
-        if (preview) {
-          URL.revokeObjectURL(preview);
-        }
-        setPreview(URL.createObjectURL(file));
-      }
-      onUpload(file);
-    } else {
-      if (!isTypeCorrect) {
-        setError('Invalid file type');
-      } else if (!isSizeCorrect) {
-        setError('File size exceeds the limit');
-      }
-    }
-  }
-
-  useEffect(() => {
-    // Cleanup preview URL on component unmount
-    return () => {
-      if (preview) {
-        URL.revokeObjectURL(preview);
-      }
-    };
-  }, [preview]);
-
-  return (
-    <form role="form">
-      <label htmlFor="upload">Upload file</label>
-      <input name="upload" id="upload" type="file" onChange={onFileChange} />
-      <button onClick={(e) => e.preventDefault()}>Upload</button>
-      {error && <span aria-live="polite">{error}</span>}
-      {preview && <img src={preview} alt="File preview" />}
-    </form>
-  );
+  // TODO: Implement secure file upload
+  // 1. Validate file type against allowedTypes
+  // 2. Validate file size against maxSize
+  // 3. Sanitize filename
+  // 4. Create safe preview for images
+  // 5. Call onUpload with validated file
 }
-
-SecureFileUpload.propTypes = {
-  allowedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
-  maxSize: PropTypes.number.isRequired,
-  onUpload: PropTypes.func.isRequired
-};
 
 /**
  * Validates file type by checking both MIME type and extension
  */
-export function validateFileType(file, allowedTypes) {
-  const checkType = allowedTypes.some((type) => type === file.type);
+export function validateFileType(file, allowedTypes) {}
 
-  const extension = file.name.split('.').pop().toLowerCase();
-  const allowedExtensions = allowedTypes.map((type) => type.split('/').pop());
-
-  if (checkType || allowedExtensions.includes(extension)) {
-    return true;
-  }
-
-  return false;
+/**
+ * Sanitizes a filename for safe storage
+ */
+export function sanitizeFilename(filename) {
+  return filename
+    .replace(/(\.\.\/|\\)/g, '') // Remove path traversal
+    .replace(/[^a-zA-Z0-9._-]/g, '') // Remove special characters
+    .substring(0, 255); // Limit length
 }
 
 // =============================================================================
@@ -534,83 +337,17 @@ export function SafeSearchInput({ onSearch }) {
   const [query, setQuery] = useState('');
   const [warning, setWarning] = useState('');
 
-  function onSubmit(e) {
-    e.preventDefault();
-    setWarning('');
-
-    console.log(query);
-    const isInvalid = detectSQLInjection(query);
-
-    if (isInvalid) {
-      setWarning('Warning: SQL injection detected');
-    } else {
-      onSearch(query);
-    }
-  }
-
-  return (
-    <form onSubmit={onSubmit}>
-      <label htmlFor="query">Query</label>
-      <textarea
-        name="query"
-        id="query"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <button type="submit">Search</button>
-      {warning && <span aria-live="polite">{warning}</span>}
-    </form>
-  );
+  // TODO: Implement safe search input
+  // 1. Detect SQL injection patterns
+  // 2. Show warning if dangerous patterns found
+  // 3. Sanitize or block dangerous input
+  // 4. Call onSearch with safe query
 }
-
-SafeSearchInput.propTypes = {
-  onSearch: PropTypes.func.isRequired
-};
 
 /**
  * Detects potential SQL injection patterns
  */
-export function detectSQLInjection(input) {
-  // Normalize input to lowercase for case-insensitive matching
-  const normalizedInput = input.toLowerCase();
-
-  // List of SQL keywords to detect
-  const sqlKeywords = [
-    'select',
-    'drop',
-    'insert',
-    'update',
-    'delete',
-    'union',
-    'alter',
-    'create',
-    'replace'
-  ];
-
-  // Regex to detect SQL-like patterns
-  const sqlPattern = new RegExp(
-    `\\b(${sqlKeywords.join('|')})\\b.*(from|into|where|table|database)`,
-    'i'
-  );
-
-  // Check for dangerous patterns
-  const hasSQLKeywordInContext = sqlPattern.test(input);
-  const hasQuotes = /['"`]/.test(input); // Single, double, or backticks
-  const hasSemicolon = /;/.test(input);
-  const hasCommentSyntax = /--|\/\*/.test(input); // SQL comments
-
-  // Allow safe queries with common words
-  const safePhrases = ['select a date', 'select an option'];
-  const isSafePhrase = safePhrases.some((phrase) =>
-    normalizedInput.includes(phrase)
-  );
-
-  // Return true if any pattern is detected, excluding safe phrases
-  return (
-    !isSafePhrase &&
-    (hasSQLKeywordInContext || hasQuotes || hasSemicolon || hasCommentSyntax)
-  );
-}
+export function detectSQLInjection(input) {}
 
 // =============================================================================
 // EXERCISE 10: Secure Local Storage Handler
@@ -656,37 +393,9 @@ export function detectSQLInjection(input) {
   </SecureLocalStorage>
  */
 export function SecureLocalStorage({ storageKey, initialValue, children }) {
-  const [value, setValue] = useState(
-    () => getStoredValue(storageKey) || initialValue
-  );
-  const [error, setError] = useState('');
-
-  function getStoredValue(key) {
-    const data = localStorage.getItem(key);
-
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function setStoredValue(newValue) {
-    try {
-      const sanitised =
-        typeof newValue === 'string' ? DOMPurify.sanitize(newValue) : newValue;
-      localStorage.setItem(storageKey, JSON.stringify(sanitised));
-      setValue(sanitised);
-    } catch (e) {
-      setError('Failed to save data. Storage quota exceeded.');
-    }
-  }
-
-  return children({ value, setStoredValue, error });
+  // TODO: Implement secure localStorage handling
+  // 1. Load data from localStorage with validation
+  // 2. Save data with sanitization
+  // 3. Handle storage quota errors
+  // 4. Provide context to children
 }
-
-SecureLocalStorage.propTypes = {
-  storageKey: PropTypes.string.isRequired,
-  initialValue: PropTypes.any,
-  children: PropTypes.func.isRequired
-};

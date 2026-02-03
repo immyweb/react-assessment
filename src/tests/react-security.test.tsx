@@ -82,8 +82,8 @@ describe('Exercise 1: XSS Prevention', () => {
 
       const profile = container.querySelector('.user-profile');
       expect(profile).toBeInTheDocument();
-      expect(profile.querySelector('h2')).toBeInTheDocument();
-      expect(profile.querySelector('p')).toBeInTheDocument();
+      expect(profile?.querySelector('h2')).toBeInTheDocument();
+      expect(profile?.querySelector('p')).toBeInTheDocument();
     });
   });
 });
@@ -403,7 +403,7 @@ describe('Exercise 6: Secure Data Attributes', () => {
         </SecureDataAttributes>
       );
 
-      const element = container.firstChild;
+      const element = container.firstChild as HTMLElement;
       const tooltipAttr = element.getAttribute('data-tooltip');
       expect(tooltipAttr).not.toContain('<script>');
       expect(tooltipAttr).not.toContain('>');
@@ -438,9 +438,18 @@ describe('Exercise 7: CSP Violation Reporter', () => {
 
       // Simulate CSP violation event
       const event = new Event('securitypolicyviolation');
-      event.violatedDirective = 'script-src';
-      event.blockedURI = 'inline';
-      event.sourceFile = 'test.js';
+      Object.defineProperty(event, 'violatedDirective', {
+        value: 'script-src',
+        configurable: true
+      });
+      Object.defineProperty(event, 'blockedURI', {
+        value: 'inline',
+        configurable: true
+      });
+      Object.defineProperty(event, 'sourceFile', {
+        value: 'test.js',
+        configurable: true
+      });
 
       act(() => {
         window.dispatchEvent(event);
@@ -456,17 +465,35 @@ describe('Exercise 7: CSP Violation Reporter', () => {
 
       // Trigger two violations
       const event1 = new Event('securitypolicyviolation');
-      event1.violatedDirective = 'script-src';
-      event1.blockedURI = 'inline';
-      event1.sourceFile = 'test.js';
+      Object.defineProperty(event1, 'violatedDirective', {
+        value: 'script-src',
+        configurable: true
+      });
+      Object.defineProperty(event1, 'blockedURI', {
+        value: 'inline',
+        configurable: true
+      });
+      Object.defineProperty(event1, 'sourceFile', {
+        value: 'test.js',
+        configurable: true
+      });
       act(() => {
         window.dispatchEvent(event1);
       });
 
       const event2 = new Event('securitypolicyviolation');
-      event2.violatedDirective = 'style-src';
-      event2.blockedURI = 'inline';
-      event2.sourceFile = 'test2.js';
+      Object.defineProperty(event2, 'violatedDirective', {
+        value: 'style-src',
+        configurable: true
+      });
+      Object.defineProperty(event2, 'blockedURI', {
+        value: 'inline',
+        configurable: true
+      });
+      Object.defineProperty(event2, 'sourceFile', {
+        value: 'test2.js',
+        configurable: true
+      });
       act(() => {
         window.dispatchEvent(event2);
       });
@@ -503,10 +530,10 @@ describe('Exercise 8: Secure File Upload', () => {
       );
 
       const file = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
-      const input = screen
-        .getByRole('button', { name: /upload/i })
-        .closest('div')
-        .querySelector('input[type="file"]');
+      const buttonDiv = screen.getByRole('button', { name: /upload/i });
+      const input = buttonDiv?.querySelector(
+        'input[type="file"]'
+      ) as HTMLElement;
 
       if (input) {
         await userEvent.upload(input, file);
@@ -526,10 +553,10 @@ describe('Exercise 8: Secure File Upload', () => {
       const file = new File(['content'], 'test.exe', {
         type: 'application/exe'
       });
-      const input = screen
-        .getByRole('button', { name: /upload/i })
-        .closest('div')
-        .querySelector('input[type="file"]');
+      const buttonDiv = screen.getByRole('button', { name: /upload/i });
+      const input = buttonDiv?.querySelector(
+        'input[type="file"]'
+      ) as HTMLElement;
 
       if (input) {
         await userEvent.upload(input, file);
@@ -551,10 +578,10 @@ describe('Exercise 8: Secure File Upload', () => {
       const file = new File([largeContent], 'large.jpg', {
         type: 'image/jpeg'
       });
-      const input = screen
-        .getByRole('button', { name: /upload/i })
-        .closest('div')
-        .querySelector('input[type="file"]');
+      const buttonDiv = screen.getByRole('button', { name: /upload/i });
+      const input = buttonDiv?.querySelector(
+        'input[type="file"]'
+      ) as HTMLElement;
 
       if (input) {
         await userEvent.upload(input, file);
