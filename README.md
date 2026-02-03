@@ -53,7 +53,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - useLayoutEffect use cases ✅
 - useSyncExternalStore integration ✅
 
-### 6. Performance Optimization (react-performance.jsx)
+### 6. Performance Optimization (react-performance.tsx)
 
 - React.memo and memoization ✅
 - Component splitting strategies ❌
@@ -122,7 +122,7 @@ A set of tasks to assesses the skills of a candidate for a React position, or to
 - Redux - state management ✅
 - Zustand - state management ✅
 
-### 14. Security Practices (react-security.jsx)
+### 14. Security Practices (react-security.tsx)
 
 - XSS prevention techniques ✅
 - dangerouslySetInnerHTML safe usage patterns ✅

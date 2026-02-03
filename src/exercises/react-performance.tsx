@@ -6,13 +6,9 @@
  * 2. Component Splitting
  * 3. Lazy Loading & Suspense
  * 4. Basic Virtual Lists
- *
- * Each exercise focuses on core concepts with practical examples.
- *
- * Instructions: Replace all TODO comments with your implementations.
  */
 
-import React, {
+import {
   useState,
   useMemo,
   useCallback,
@@ -306,7 +302,7 @@ const VirtualListItem = memo(function VirtualListItem({ item, height, index }) {
  * Non-memoized child component for comparison with MemoizedChild.
  * Always re-renders when parent renders.
  */
-export function RegularChild({ name, count }) {
+export function RegularChild({ name, count }: { name: string; count: number }) {
   console.log(`RegularChild rendered with: ${name}, ${count}`);
 
   return (
@@ -330,18 +326,4 @@ export function generateMockData(count = 10000) {
     category: `Category ${index % 10}`,
     status: ['active', 'inactive', 'pending'][Math.floor(Math.random() * 3)]
   }));
-}
-
-/**
- * Demo component that shows all exercises together.
- * Students can implement this after completing individual exercises.
- */
-export function PerformanceExercisesDemo() {
-  // TODO: Generate mock data for virtual list
-
-  // TODO: Return JSX that renders all exercise components with proper spacing
-  // Include: MemoizationDemo, ExpensiveMemoCalculator, OptimizedList,
-  // UserProfilePage, LazyLoadingDemo, VirtualList
-  // Add CSS for spinner animation
-  return <div>TODO: Implement PerformanceExercisesDemo</div>;
 }

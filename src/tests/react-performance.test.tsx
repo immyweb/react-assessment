@@ -14,9 +14,8 @@ import {
   LazyLoadingDemo,
   VirtualList,
   RegularChild,
-  generateMockData,
-  PerformanceExercisesDemo
-} from '../exercises/react-performance';
+  generateMockData
+} from '../answers/react-performance';
 
 // =============================================================================
 // SETUP
@@ -292,6 +291,15 @@ describe('Virtual List', () => {
 
 describe('Helper Components', () => {
   describe('RegularChild', () => {
+    beforeEach(() => {
+      console.log = mockConsole;
+      mockConsole.mockClear();
+    });
+
+    afterEach(() => {
+      console.log = originalConsoleLog;
+    });
+
     it('renders child component', () => {
       render(<RegularChild name="Alice" count={5} />);
 
@@ -330,31 +338,6 @@ describe('Helper Components', () => {
         expect(item).toHaveProperty('category');
         expect(item).toHaveProperty('status');
       });
-    });
-  });
-
-  describe('PerformanceExercisesDemo', () => {
-    it('renders main demo component', () => {
-      render(<PerformanceExercisesDemo />);
-
-      expect(
-        screen.getByText('React Performance Optimization Exercises')
-      ).toBeInTheDocument();
-    });
-
-    it('includes all exercise components', () => {
-      render(<PerformanceExercisesDemo />);
-
-      expect(screen.getByText('Memoization Demo')).toBeInTheDocument();
-      expect(
-        screen.getByText('Expensive Calculation with useMemo')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText('Optimized List with useCallback')
-      ).toBeInTheDocument();
-      expect(screen.getByText('User Profile Page')).toBeInTheDocument();
-      expect(screen.getByText('Lazy Loading Demo')).toBeInTheDocument();
-      expect(screen.getByText('Virtual List Demo')).toBeInTheDocument();
     });
   });
 });

@@ -7,9 +7,6 @@
  * 3. Lazy Loading & Suspense
  * 4. Basic Virtual Lists
  *
- * Each exercise focuses on core concepts with practical examples.
- *
- * Instructions: Replace all TODO comments with your implementations.
  */
 
 import {
@@ -35,7 +32,13 @@ import {
  * - Accept name and count props
  * - Return JSX with name, count, and helpful text
  */
-export const MemoizedChild = memo(function ChildComponent({ name, count }) {
+export const MemoizedChild = memo(function ChildComponent({
+  name,
+  count
+}: {
+  name: string;
+  count: number;
+}) {
   console.log(`MemoizedChild rendered with: ${name}, ${count}`);
 
   return (
@@ -60,7 +63,7 @@ export function MemoizationDemo() {
   const [childCount, setChildCount] = useState(0);
   const [unrelatedState, setUnrelatedState] = useState(false);
 
-  function onUpdateName(name) {
+  function onUpdateName(name: string) {
     setChildName(name);
   }
 
@@ -94,8 +97,8 @@ export function MemoizationDemo() {
  */
 export function ExpensiveMemoCalculator({ numbers = [1, 2, 3, 4, 5] }) {
   const [otherState, setOtherState] = useState(false);
-  const t0Ref = useRef();
-  const t1Ref = useRef();
+  const t0Ref = useRef(0);
+  const t1Ref = useRef(0);
 
   // Expensive calculations are cached, and only re-run when
   // numbers prop changes.
@@ -131,8 +134,13 @@ export function ExpensiveMemoCalculator({ numbers = [1, 2, 3, 4, 5] }) {
  * - Stable click handlers using useCallback
  * - Add/remove items functionality
  */
+type OptimizedItem = {
+  id: number;
+  name: string;
+};
+
 export function OptimizedList() {
-  const [items, setItems] = useState([
+  const [items, setItems] = useState<OptimizedItem[]>([
     { id: 1, name: 'Item 1' },
     { id: 2, name: 'Item 2' },
     { id: 3, name: 'Item 3' }
@@ -140,18 +148,20 @@ export function OptimizedList() {
   const [newItem, setNewItem] = useState('');
 
   // These functions are not recreated unnecessarily
-  const clickHandler = useCallback((id) => {
+  const clickHandler = useCallback((id: number) => {
     console.log(`Item ${id} clicked!`);
   }, []);
 
   const addItem = useCallback(() => {
     const lastItem = items.at(-1);
-    setItems([...items, { id: lastItem.id + 1, name: newItem }]);
+    const nextId = lastItem ? lastItem.id + 1 : 1;
+    if (newItem.trim() === '') return; // Prevent adding empty items
+    setItems([...items, { id: nextId, name: newItem }]);
     setNewItem('');
   }, [items, newItem]);
 
   const removeItem = useCallback(
-    (id) => {
+    (id: number) => {
       const filteredList = items.filter((item) => item.id !== id);
       setItems(filteredList);
     },
@@ -194,7 +204,15 @@ export function OptimizedList() {
 // - Accept item, onClick, onRemove props
 // - Log renders to console
 // - Display item name and remove button
-const OptimizedListItem = memo(function ListItem({ item, onClick, onRemove }) {
+const OptimizedListItem = memo(function ListItem({
+  item,
+  onClick,
+  onRemove
+}: {
+  item: OptimizedItem;
+  onClick: (id: number) => void;
+  onRemove: (id: number) => void;
+}) {
   console.log(`Item id:${item.id} rendered`);
 
   return (
@@ -217,7 +235,7 @@ const OptimizedListItem = memo(function ListItem({ item, onClick, onRemove }) {
  * - Pass userId prop to all child components
  * - Use grid or flexbox layout
  */
-export function UserProfilePage({ userId = 1 }) {
+export function UserProfilePage({ userId = 1 }: { userId: number }) {
   return (
     <div>
       <h3>User Profile Page</h3>
@@ -237,7 +255,11 @@ export function UserProfilePage({ userId = 1 }) {
  * - Button to update the user's name (add " Jr." suffix)
  * - Log renders with userId for performance tracking
  */
-export const UserProfile = memo(function UserProfile({ userId }) {
+export const UserProfile = memo(function UserProfile({
+  userId
+}: {
+  userId: number;
+}) {
   const [user, setUser] = useState({
     name: 'John Doe',
     email: 'john@example.com'
@@ -272,7 +294,11 @@ export const UserProfile = memo(function UserProfile({ userId }) {
  * - Checkbox for notifications and select for theme
  * - Log renders with userId for performance tracking
  */
-export const UserSettings = memo(function UserSettings({ userId }) {
+export const UserSettings = memo(function UserSettings({
+  userId
+}: {
+  userId: number;
+}) {
   const [notification, setNotification] = useState(true);
   const [theme, setTheme] = useState('light');
 
@@ -315,7 +341,13 @@ export const UserSettings = memo(function UserSettings({ userId }) {
  * - Support limit prop (default: 5) to control number of activities shown
  * - Log renders with userId for performance tracking
  */
-export const ActivityFeed = memo(function ActivityFeed({ userId, limit = 5 }) {
+export const ActivityFeed = memo(function ActivityFeed({
+  userId,
+  limit = 5
+}: {
+  userId: number;
+  limit?: number;
+}) {
   const [activities, setActivities] = useState([
     'Logged in',
     'Updated profile',
@@ -360,20 +392,22 @@ export const ActivityFeed = memo(function ActivityFeed({ userId, limit = 5 }) {
 // - Text about lazy loading
 // - Mock chart placeholders (2 divs with "Chart 1" and "Chart 2")
 const HeavyDashboard = lazy(() => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve({
-        default: () => (
-          <div>
-            <h3>Heavy Dashboard Component</h3>
-            <p>This component is lazy loaded</p>
-            <div>Chart 1</div>
-            <div>Chart 2</div>
-          </div>
-        )
-      });
-    }, 1000);
-  });
+  return new Promise<{ default: React.ComponentType<any> }>(
+    (resolve, reject) => {
+      setTimeout(() => {
+        resolve({
+          default: () => (
+            <div>
+              <h3>Heavy Dashboard Component</h3>
+              <p>This component is lazy loaded</p>
+              <div>Chart 1</div>
+              <div>Chart 2</div>
+            </div>
+          )
+        });
+      }, 1000);
+    }
+  );
 });
 
 // TODO: Create HeavyReports using React.lazy
@@ -382,36 +416,38 @@ const HeavyDashboard = lazy(() => {
 // - Text about lazy loading
 // - Mock table with headers "Metric" and "Value" and sample rows
 const HeavyReports = lazy(() => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve({
-        default: () => (
-          <div>
-            <h3>Heavy Reports Component</h3>
-            <p>This component is lazy loaded</p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>1000</td>
-                  <td>1212</td>
-                </tr>
-                <tr>
-                  <td>56443</td>
-                  <td>940389</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )
-      });
-    }, 1500);
-  });
+  return new Promise<{ default: React.ComponentType<any> }>(
+    (resolve, reject) => {
+      setTimeout(() => {
+        resolve({
+          default: () => (
+            <div>
+              <h3>Heavy Reports Component</h3>
+              <p>This component is lazy loaded</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1000</td>
+                    <td>1212</td>
+                  </tr>
+                  <tr>
+                    <td>56443</td>
+                    <td>940389</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )
+        });
+      }, 1500);
+    }
+  );
 });
 
 function Loading() {
@@ -428,10 +464,12 @@ function Loading() {
  * - Use Suspense with loading fallbacks for lazy components
  * - Include helpful text about lazy loading behavior
  */
-export function LazyLoadingDemo() {
-  const [activeTab, setActiveTab] = useState('home');
+type TabType = 'home' | 'dashboard' | 'reports';
 
-  function onTabClick(tab) {
+export function LazyLoadingDemo() {
+  const [activeTab, setActiveTab] = useState<TabType>('home');
+
+  function onTabClick(tab: TabType) {
     setActiveTab(tab);
   }
 
@@ -506,11 +544,25 @@ export function LazyLoadingDemo() {
  * - Show total height for proper scrollbar
  * - Display performance info (visible count, total count, scroll position, visible range)
  */
+
+type VirtualListItem = {
+  id: number;
+  name: string;
+  value: number;
+  category: string;
+  status: string;
+};
+
 export function VirtualList({
   items = [],
   itemHeight = 50,
   containerHeight = 400,
   overscan = 3
+}: {
+  items: VirtualListItem[];
+  itemHeight?: number;
+  containerHeight?: number;
+  overscan?: number;
 }) {
   const [scrollTop, setScrollTop] = useState(0);
 
@@ -524,8 +576,8 @@ export function VirtualList({
 
   const visibleItems = items.slice(startIndex, endIndex + 1);
 
-  function onScrollHandler(scroll) {
-    setScrollTop(scroll);
+  function onScrollHandler(e: React.UIEvent<HTMLDivElement>) {
+    setScrollTop(e.currentTarget.scrollTop);
   }
 
   // TODO: Return JSX with:
@@ -536,7 +588,7 @@ export function VirtualList({
   return (
     <div
       style={{ height: containerHeight, overflowY: 'auto' }}
-      onScroll={(e) => onScrollHandler(e.target.scrollTop)}>
+      onScroll={onScrollHandler}>
       <h2>Virtual List Demo</h2>
       <p>{`Scroll position: ${scrollTop}`}</p>
       <p>{`Visible range: ${startIndex} to ${endIndex}`}</p>
@@ -565,8 +617,15 @@ export function VirtualList({
 // - Fixed height styling
 // - Display item index, name, and value
 // - Alternating background colors for odd/even rows
-const VirtualListItem = memo(function VirtualListItem({ item, height, index }) {
-  // TODO: Return JSX with proper styling and item data
+const VirtualListItem = memo(function VirtualListItem({
+  item,
+  height,
+  index
+}: {
+  item: VirtualListItem;
+  height: number;
+  index: number;
+}) {
   return (
     <div
       style={{
@@ -591,7 +650,7 @@ const VirtualListItem = memo(function VirtualListItem({ item, height, index }) {
  * Non-memoized child component for comparison with MemoizedChild.
  * Always re-renders when parent renders.
  */
-export function RegularChild({ name, count }) {
+export function RegularChild({ name, count }: { name: string; count: number }) {
   console.log(`RegularChild rendered with: ${name}, ${count}`);
 
   return (
@@ -615,18 +674,4 @@ export function generateMockData(count = 10000) {
     category: `Category ${index % 10}`,
     status: ['active', 'inactive', 'pending'][Math.floor(Math.random() * 3)]
   }));
-}
-
-/**
- * Demo component that shows all exercises together.
- * Students can implement this after completing individual exercises.
- */
-export function PerformanceExercisesDemo() {
-  // TODO: Generate mock data for virtual list
-
-  // TODO: Return JSX that renders all exercise components with proper spacing
-  // Include: MemoizationDemo, ExpensiveMemoCalculator, OptimizedList,
-  // UserProfilePage, LazyLoadingDemo, VirtualList
-  // Add CSS for spinner animation
-  return <div>TODO: Implement PerformanceExercisesDemo</div>;
 }
